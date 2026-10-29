@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from '../supabase.js';
 import { makeSlug } from '../utils/slug.js';
 
@@ -8,30 +8,28 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
-// Gemini AI Setup using your API Key from environment variables
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize Google Generative AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.get('/check', (_req, res) => res.json({ ok: true }));
 
-// 1. Image থেকে Gemini AI দিয়ে MCQ Questions Parse করার Route (যে কেউ করতে পারবে)
+// Image to MCQ Parse Route using Gemini
 router.post('/parse-image-exam', upload.single('image'), wrap(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'কোনো ইমেজ আপলোড করা হয়নি!' });
   }
 
-  const imageBase64 = req.file.buffer.toString("base64");
+  // Convert buffer to generative part format
+  const imagePart = {
+    inlineData: {
+      data: req.file.buffer.toString("base64"),
+      mimeType: req.file.mimetype || "image/jpeg"
+    },
+  };
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
-    contents: [
-      {
-        inlineData: {
-          data: imageBase64,
-          mimeType: req.file.mimetype || "image/jpeg"
-        }
-      },
-      {
-        text: `You are an expert academic question parser for admission test preparation. 
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+  const prompt = `You are an expert academic question parser for admission test preparation. 
 Analyze this question paper image carefully. Extract all the Multiple Choice Questions (MCQs), their options, and find the correct answer from the answer key (uttormala) provided at the bottom or anywhere in the image.
 Return the result strictly as a valid JSON object with this exact format, with no extra markdown outside or text:
 {
@@ -47,12 +45,12 @@ Return the result strictly as a valid JSON object with this exact format, with n
     }
   ]
 }
-Note: 'correct_option' must be strictly a single letter: "A", "B", "C", or "D".`
-      }
-    ]
-  });
+Note: 'correct_option' must be strictly a single letter: "A", "B", "C", or "D".`;
 
-  let rawText = response.text.trim();
+  const result = await model.generateContent([prompt, imagePart]);
+  const response = await result.response;
+  let rawText = response.text().trim();
+
   if (rawText.startsWith("```json")) {
     rawText = rawText.replace(/^```json/, "").replace(/```$/, "").trim();
   } else if (rawText.startsWith("```")) {
@@ -62,52 +60,3 @@ Note: 'correct_option' must be strictly a single letter: "A", "B", "C", or "D".`
   const parsedData = JSON.parse(rawText);
   res.json({ success: true, data: parsedData });
 }));
-
-// 2. Exam Create & Save Route (যে কেউ এক্সাম তৈরি ও সেভ করতে পারবে)
-router.post('/exams', wrap(async (req, res) => {
-  const { title, description = '', duration_minutes = 30, questions } = req.body || {};
-  if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
-  if (!Array.isArray(questions) || !questions.length)
-    return res.status(400).json({ error: 'Add at least one question' });
-
-  const rows = [];
-  for (const [i, q] of questions.entries()) {
-    const correct = String(q.correct_option || '').toUpperCase();
-    const complete = q.question_text?.trim() &&
-      ['option_a', 'option_b', 'option_c', 'option_d'].every((k) => q[k]?.trim());
-    if (!complete || !['A', 'B', 'C', 'D'].includes(correct))
-      return res.status(400).json({ error: `Question ${i + 1} is incomplete` });
-    rows.push({
-      position: i,
-      question_text: q.question_text.trim(),
-      option_a: q.option_a.trim(), 
-      option_b: q.option_b.trim(),
-      option_c: q.option_c.trim(), 
-      option_d: q.option_d.trim(),
-      correct_option: correct,
-      marks: Math.abs(Number(q.marks) || 1),
-      negative_marks: Math.abs(Number(q.negative_marks) || 0),
-    });
-  }
-
-  const slug = makeSlug(title);
-  const { data: exam, error } = await supabase.from('exams')
-    .insert({ slug, title: title.trim(), description, duration_minutes: Math.max(1, Number(duration_minutes) || 30) })
-    .select('id,slug').single();
-  if (error) throw error;
-
-  const { error: qErr } = await supabase.from('questions').insert(rows.map((r) => ({ ...r, exam_id: exam.id })));
-  if (qErr) {
-    await supabase.from('exams').delete().eq('id', exam.id); // rollback
-    throw qErr;
-  }
-  res.status(201).json({ slug: exam.slug });
-}));
-
-router.delete('/exams/:id', wrap(async (req, res) => {
-  const { error } = await supabase.from('exams').delete().eq('id', req.params.id);
-  if (error) throw error;
-  res.json({ ok: true });
-}));
-
-export default router;
