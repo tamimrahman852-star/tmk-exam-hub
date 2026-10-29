@@ -19,7 +19,6 @@ router.post('/parse-image-exam', upload.single('image'), wrap(async (req, res) =
     return res.status(400).json({ error: 'কোনো ইমেজ আপলোড করা হয়নি!' });
   }
 
-  // Convert buffer to generative part format
   const imagePart = {
     inlineData: {
       data: req.file.buffer.toString("base64"),
@@ -60,3 +59,53 @@ Note: 'correct_option' must be strictly a single letter: "A", "B", "C", or "D".`
   const parsedData = JSON.parse(rawText);
   res.json({ success: true, data: parsedData });
 }));
+
+// Exam Create & Save Route
+router.post('/exams', wrap(async (req, res) => {
+  const { title, description = '', duration_minutes = 30, questions } = req.body || {};
+  if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
+  if (!Array.isArray(questions) || !questions.length)
+    return res.status(400).json({ error: 'Add at least one question' });
+
+  const rows = [];
+  for (const [i, q] of questions.entries()) {
+    const correct = String(q.correct_option || '').toUpperCase();
+    const complete = q.question_text?.trim() &&
+      ['option_a', 'option_b', 'option_c', 'option_d'].every((k) => q[k]?.trim());
+    if (!complete || !['A', 'B', 'C', 'D'].includes(correct))
+      return res.status(400).json({ error: `Question ${i + 1} is incomplete` });
+    rows.push({
+      position: i,
+      question_text: q.question_text.trim(),
+      option_a: q.option_a.trim(), 
+      option_b: q.option_b.trim(),
+      option_c: q.option_c.trim(), 
+      option_d: q.option_d.trim(),
+      correct_option: correct,
+      marks: Math.abs(Number(q.marks) || 1),
+      negative_marks: Math.abs(Number(q.negative_marks) || 0),
+    });
+  }
+
+  const slug = makeSlug(title);
+  const { data: exam, error } = await supabase.from('exams')
+    .insert({ slug, title: title.trim(), description, duration_minutes: Math.max(1, Number(duration_minutes) || 30) })
+    .select('id,slug').single();
+  if (error) throw error;
+
+  const { error: qErr } = await supabase.from('questions').insert(rows.map((r) => ({ ...r, exam_id: exam.id })));
+  if (qErr) {
+    await supabase.from('exams').delete().eq('id', exam.id); // rollback
+    throw qErr;
+  }
+  res.status(201).json({ slug: exam.slug });
+}));
+
+router.delete('/exams/:id', wrap(async (req, res) => {
+  const { error } = await supabase.from('exams').delete().eq('id', req.params.id);
+  if (error) throw error;
+  res.json({ ok: true });
+}));
+
+// VERY IMPORTANT: Default export to prevent SyntaxError in index.js
+export default router;
