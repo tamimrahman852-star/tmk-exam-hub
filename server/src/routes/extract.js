@@ -3,6 +3,33 @@ import { makeGuard } from '../middleware/guard.js';
 
 const router = Router();
 
+// GEMINI_MODEL can be a comma-separated list. Each model is tried (with one retry on overload)
+// before falling back to the next one.
+const MODELS = (process.env.GEMINI_MODEL || 'gemini-3.5-flash,gemini-3.6-flash,gemini-3.1-flash-lite')
+  .split(',').map((m) => m.trim()).filter(Boolean);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function generate(body) {
+  let last = { ok: false, status: 500 };
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) return { ok: true, data };
+      last = { ok: false, status: r.status };
+      console.error(`Gemini error [${model}] ${r.status}`, JSON.stringify(data).slice(0, 300));
+      if ([400, 401, 403].includes(r.status)) return last; // key/request problem: other models won't help
+      if (r.status === 404) break;                           // this model name is unavailable: next model
+      await sleep(1500);
+    }
+  }
+  return last;
+}
+
 const PROMPT = `This is a photo of a question paper / question bank page. It may be in Bangla, English or mixed.
 Extract EVERY multiple-choice question visible on the page, in order.
 
@@ -45,22 +72,19 @@ router.post('/', makeGuard(Number(process.env.EXTRACT_LIMIT) || 10), async (req,
     if (image.length > 7_000_000) return res.status(413).json({ error: 'Image is too large' });
     if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'AI extraction is not configured on the server' });
 
-    const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mimeType, data: image } }] }],
-        generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: schema },
-      }),
+    const out = await generate({
+      contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mimeType, data: image } }] }],
+      generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: schema },
     });
-    const data = await r.json();
-    if (!r.ok) {
-      console.error('Gemini error', r.status, JSON.stringify(data).slice(0, 500));
-      return res.status(502).json({
-        error: r.status === 429 ? 'AI limit reached. Please try again in a minute.' : 'The AI could not process this image.',
+    if (!out.ok) {
+      const busy = [429, 500, 503, 504].includes(out.status);
+      return res.status(busy ? 503 : 502).json({
+        error: busy
+          ? 'The AI is very busy right now. Please try again in a minute.'
+          : 'The AI could not process this image. Check the server GEMINI_API_KEY / GEMINI_MODEL.',
       });
     }
+    const data = out.data;
 
     const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
     let parsed;

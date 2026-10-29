@@ -45,5 +45,5 @@ npm run dev               # http://localhost:5173
 
 ## AI image import (Gemini)
 1. Get a free key at https://aistudio.google.com/apikey.
-2. On the server set `GEMINI_API_KEY` (never put it in the client or GitHub). Optional: `GEMINI_MODEL` (default `gemini-3.5-flash`; change it if Google retires the model).
+2. On the server set `GEMINI_API_KEY` (never put it in the client or GitHub). Optional: `GEMINI_MODEL` (comma-separated fallback list, default `gemini-3.5-flash,gemini-3.6-flash,gemini-3.1-flash-lite`).
 3. `PUBLIC_CREATE=false` (default): only people with `ADMIN_KEY` can upload/create. `PUBLIC_CREATE=true`: anyone can, limited per IP per hour by `EXTRACT_LIMIT` and `CREATE_LIMIT`.
