@@ -1,14 +1,69 @@
 import { Router } from 'express';
+import multer from 'multer';
+import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabase.js';
-import { adminAuth } from '../middleware/adminAuth.js';
 import { makeSlug } from '../utils/slug.js';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
-router.use(adminAuth);
+
+// Gemini AI Setup using your API Key from environment variables
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 router.get('/check', (_req, res) => res.json({ ok: true }));
 
+// 1. Image থেকে Gemini AI দিয়ে MCQ Questions Parse করার Route (যে কেউ করতে পারবে)
+router.post('/parse-image-exam', upload.single('image'), wrap(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'কোনো ইমেজ আপলোড করা হয়নি!' });
+  }
+
+  const imageBase64 = req.file.buffer.toString("base64");
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash',
+    contents: [
+      {
+        inlineData: {
+          data: imageBase64,
+          mimeType: req.file.mimetype || "image/jpeg"
+        }
+      },
+      {
+        text: `You are an expert academic question parser for admission test preparation. 
+Analyze this question paper image carefully. Extract all the Multiple Choice Questions (MCQs), their options, and find the correct answer from the answer key (uttormala) provided at the bottom or anywhere in the image.
+Return the result strictly as a valid JSON object with this exact format, with no extra markdown outside or text:
+{
+  "title": "Extracted Exam Title",
+  "questions": [
+    {
+      "question_text": "Question text here",
+      "option_a": "Option A text",
+      "option_b": "Option B text",
+      "option_c": "Option C text",
+      "option_d": "Option D text",
+      "correct_option": "A"
+    }
+  ]
+}
+Note: 'correct_option' must be strictly a single letter: "A", "B", "C", or "D".`
+      }
+    ]
+  });
+
+  let rawText = response.text.trim();
+  if (rawText.startsWith("```json")) {
+    rawText = rawText.replace(/^```json/, "").replace(/```$/, "").trim();
+  } else if (rawText.startsWith("```")) {
+    rawText = rawText.replace(/^```/, "").replace(/```$/, "").trim();
+  }
+
+  const parsedData = JSON.parse(rawText);
+  res.json({ success: true, data: parsedData });
+}));
+
+// 2. Exam Create & Save Route (যে কেউ এক্সাম তৈরি ও সেভ করতে পারবে)
 router.post('/exams', wrap(async (req, res) => {
   const { title, description = '', duration_minutes = 30, questions } = req.body || {};
   if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
@@ -25,11 +80,13 @@ router.post('/exams', wrap(async (req, res) => {
     rows.push({
       position: i,
       question_text: q.question_text.trim(),
-      option_a: q.option_a.trim(), option_b: q.option_b.trim(),
-      option_c: q.option_c.trim(), option_d: q.option_d.trim(),
+      option_a: q.option_a.trim(), 
+      option_b: q.option_b.trim(),
+      option_c: q.option_c.trim(), 
+      option_d: q.option_d.trim(),
       correct_option: correct,
       marks: Math.abs(Number(q.marks) || 1),
-      negative_marks: Math.abs(Number(q.negative_marks) || 0), // "-0.25" is stored as 0.25
+      negative_marks: Math.abs(Number(q.negative_marks) || 0),
     });
   }
 
