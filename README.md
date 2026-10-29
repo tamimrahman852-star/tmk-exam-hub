@@ -42,3 +42,8 @@ npm run dev               # http://localhost:5173
 - Score = sum(marks of correct) - sum(negative marks of wrong). Enter negatives as `0.25` or `-0.25`; both work.
 - OCR runs in the browser with tesseract.js (free). Always review the extracted text; the correct answer is auto-filled only if the image has a line like `Ans: B`.
 - Admin protection is a shared secret (`ADMIN_KEY`). For multi-admin use, switch to Supabase Auth later.
+
+## AI image import (Gemini)
+1. Get a free key at https://aistudio.google.com/apikey.
+2. On the server set `GEMINI_API_KEY` (never put it in the client or GitHub). Optional: `GEMINI_MODEL` (default `gemini-3.5-flash`; change it if Google retires the model).
+3. `PUBLIC_CREATE=false` (default): only people with `ADMIN_KEY` can upload/create. `PUBLIC_CREATE=true`: anyone can, limited per IP per hour by `EXTRACT_LIMIT` and `CREATE_LIMIT`.

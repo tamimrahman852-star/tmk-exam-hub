@@ -52,8 +52,9 @@ export default function QuestionCard({ index, q, onChange, onRemove, canRemove }
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <label className="text-xs text-slate-500">Correct answer
+        <label className={`text-xs ${q.correct ? 'text-slate-500' : 'text-red-600'}`}>Correct answer
           <select className="input mt-1" value={q.correct} onChange={(e) => onChange({ correct: e.target.value })}>
+            <option value="">Select…</option>
             {['A', 'B', 'C', 'D'].map((k) => <option key={k}>{k}</option>)}
           </select>
         </label>

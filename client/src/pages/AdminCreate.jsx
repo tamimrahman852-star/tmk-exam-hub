@@ -1,22 +1,39 @@
 import { useState } from 'react';
 import { api } from '../api.js';
 import QuestionCard from '../components/QuestionCard.jsx';
+import BulkImport from '../components/BulkImport.jsx';
 import ShareButtons from '../components/ShareButtons.jsx';
 
-const emptyQ = () => ({ text: '', a: '', b: '', c: '', d: '', correct: 'A', marks: 1, negative: 0.25 });
+const blank = (marks, negative) => ({ text: '', a: '', b: '', c: '', d: '', correct: 'A', marks, negative });
+const fresh = () => ({ title: '', description: '', duration: 30, marks: 1, negative: 0.25 });
 
 export default function AdminCreate() {
   const [adminKey, setAdminKey] = useState(localStorage.getItem('tmk-admin-key') || '');
-  const [exam, setExam] = useState({ title: '', description: '', duration: 30 });
-  const [questions, setQuestions] = useState([emptyQ()]);
+  const [exam, setExam] = useState(fresh());
+  const [questions, setQuestions] = useState([blank(1, 0.25)]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [created, setCreated] = useState(null);
 
   const patch = (i, p) => setQuestions((qs) => qs.map((q, idx) => (idx === i ? { ...q, ...p } : q)));
 
+  const importQuestions = (list) => {
+    const mapped = list.map((q) => ({
+      text: q.question_text, a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d,
+      correct: q.correct_option, marks: exam.marks, negative: exam.negative,
+    }));
+    setQuestions((prev) => {
+      const onlyEmpty = prev.length === 1 && !prev[0].text && !prev[0].a;
+      return [...(onlyEmpty ? [] : prev), ...mapped];
+    });
+  };
+
+  const missing = questions.filter((q) => !q.correct).length;
+
   const save = async () => {
-    setError(''); setBusy(true);
+    setError('');
+    if (missing) return setError(`${missing} question(s) have no correct answer selected (marked red).`);
+    setBusy(true);
     try {
       localStorage.setItem('tmk-admin-key', adminKey);
       const res = await api('/api/admin/exams', {
@@ -43,7 +60,7 @@ export default function AdminCreate() {
         <h1 className="text-xl font-bold text-green-700">Exam created 🎉</h1>
         <p className="break-all rounded bg-slate-100 p-2 text-sm">{url}</p>
         <ShareButtons url={url} title={exam.title} />
-        <button className="btn-ghost" onClick={() => { setCreated(null); setExam({ title: '', description: '', duration: 30 }); setQuestions([emptyQ()]); }}>
+        <button className="btn-ghost" onClick={() => { setCreated(null); setExam(fresh()); setQuestions([blank(1, 0.25)]); }}>
           Create another
         </button>
       </div>
@@ -55,22 +72,33 @@ export default function AdminCreate() {
       <h1 className="text-2xl font-bold">Create Exam</h1>
 
       <div className="space-y-3 rounded-xl border bg-white p-4">
-        <input type="password" className="input" placeholder="Admin key" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} />
+        <input type="password" className="input" placeholder="Admin key (leave empty if public creation is on)" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} />
         <input className="input" placeholder="Exam title" value={exam.title} onChange={(e) => setExam({ ...exam, title: e.target.value })} />
         <textarea className="input" rows={2} placeholder="Description (optional)" value={exam.description} onChange={(e) => setExam({ ...exam, description: e.target.value })} />
-        <label className="block text-xs text-slate-500">Duration (minutes)
-          <input type="number" min="1" className="input mt-1" value={exam.duration} onChange={(e) => setExam({ ...exam, duration: e.target.value })} />
-        </label>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="text-xs text-slate-500">Duration (min)
+            <input type="number" min="1" className="input mt-1" value={exam.duration} onChange={(e) => setExam({ ...exam, duration: e.target.value })} />
+          </label>
+          <label className="text-xs text-slate-500">Marks / question
+            <input type="number" step="0.25" min="0" className="input mt-1" value={exam.marks} onChange={(e) => setExam({ ...exam, marks: e.target.value })} />
+          </label>
+          <label className="text-xs text-slate-500">Negative marks
+            <input type="number" step="0.25" className="input mt-1" value={exam.negative} onChange={(e) => setExam({ ...exam, negative: e.target.value })} />
+          </label>
+        </div>
+        <p className="text-xs text-slate-400">Marks and negative marks apply to newly added or imported questions. You can still edit each question.</p>
       </div>
+
+      <BulkImport adminKey={adminKey} onImport={importQuestions} />
 
       {questions.map((q, i) => (
         <QuestionCard key={i} index={i} q={q} canRemove={questions.length > 1}
           onChange={(p) => patch(i, p)} onRemove={() => setQuestions((qs) => qs.filter((_, idx) => idx !== i))} />
       ))}
 
-      <button className="btn-ghost w-full" onClick={() => setQuestions((qs) => [...qs, emptyQ()])}>+ Add question</button>
+      <button className="btn-ghost w-full" onClick={() => setQuestions((qs) => [...qs, blank(exam.marks, exam.negative)])}>+ Add question</button>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="btn w-full" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save & get share link'}</button>
+      <button className="btn w-full" disabled={busy} onClick={save}>{busy ? 'Saving…' : `Save ${questions.length} question(s) & get share link`}</button>
     </div>
   );
 }

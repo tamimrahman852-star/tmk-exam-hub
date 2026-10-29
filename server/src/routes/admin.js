@@ -1,15 +1,16 @@
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { adminAuth } from '../middleware/adminAuth.js';
+import { makeGuard } from '../middleware/guard.js';
 import { makeSlug } from '../utils/slug.js';
 
 const router = Router();
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
-router.use(adminAuth);
+const createGuard = makeGuard(Number(process.env.CREATE_LIMIT) || 20);
 
-router.get('/check', (_req, res) => res.json({ ok: true }));
+router.get('/check', adminAuth, (_req, res) => res.json({ ok: true }));
 
-router.post('/exams', wrap(async (req, res) => {
+router.post('/exams', createGuard, wrap(async (req, res) => {
   const { title, description = '', duration_minutes = 30, questions } = req.body || {};
   if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
   if (!Array.isArray(questions) || !questions.length)
@@ -47,7 +48,7 @@ router.post('/exams', wrap(async (req, res) => {
   res.status(201).json({ slug: exam.slug });
 }));
 
-router.delete('/exams/:id', wrap(async (req, res) => {
+router.delete('/exams/:id', adminAuth, wrap(async (req, res) => {
   const { error } = await supabase.from('exams').delete().eq('id', req.params.id);
   if (error) throw error;
   res.json({ ok: true });
