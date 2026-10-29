@@ -25,18 +25,18 @@ export default function QuestionCard({ index, q, onChange, onRemove, canRemove }
   };
 
   return (
-    <div className="space-y-3 rounded-xl border bg-white p-4 shadow-sm">
+    <div className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Question {index + 1}</h3>
-        {canRemove && <button type="button" onClick={onRemove} className="text-sm text-red-600">Remove</button>}
+        <h3 className="font-bold text-indigo-700">Question {index + 1}</h3>
+        {canRemove && <button type="button" onClick={onRemove} className="text-sm font-medium text-red-600">Remove</button>}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-2 text-sm">
-        <label className="btn-ghost cursor-pointer !py-1">
-          📷 Upload image (OCR)
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-2 text-sm">
+        <label className="btn-ghost cursor-pointer !px-3 !py-1.5">
+          📷 Offline OCR (single question)
           <input type="file" accept="image/*" className="hidden" onChange={handleImage} />
         </label>
-        <select value={lang} onChange={(e) => setLang(e.target.value)} className="input !w-auto !py-1">
+        <select value={lang} onChange={(e) => setLang(e.target.value)} className="input !w-auto !py-1.5">
           <option value="eng">English</option>
           <option value="eng+ben">English + Bangla</option>
         </select>
@@ -52,7 +52,7 @@ export default function QuestionCard({ index, q, onChange, onRemove, canRemove }
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <label className={`text-xs ${q.correct ? 'text-slate-500' : 'text-red-600'}`}>Correct answer
+        <label className={`text-xs ${q.correct ? 'text-slate-500' : 'font-semibold text-red-600'}`}>Correct answer
           <select className="input mt-1" value={q.correct} onChange={(e) => onChange({ correct: e.target.value })}>
             <option value="">Select…</option>
             {['A', 'B', 'C', 'D'].map((k) => <option key={k}>{k}</option>)}
@@ -65,6 +65,12 @@ export default function QuestionCard({ index, q, onChange, onRemove, canRemove }
           <input type="number" step="0.25" className="input mt-1" value={q.negative} onChange={(e) => onChange({ negative: e.target.value })} />
         </label>
       </div>
+
+      <label className="block text-xs text-slate-500">Explanation (optional)
+        <textarea className="input mt-1" rows={2} value={q.explanation}
+          placeholder="Leave empty and students can ask the AI to explain this question."
+          onChange={(e) => onChange({ explanation: e.target.value })} />
+      </label>
     </div>
   );
 }

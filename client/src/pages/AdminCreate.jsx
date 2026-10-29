@@ -4,7 +4,7 @@ import QuestionCard from '../components/QuestionCard.jsx';
 import BulkImport from '../components/BulkImport.jsx';
 import ShareButtons from '../components/ShareButtons.jsx';
 
-const blank = (marks, negative) => ({ text: '', a: '', b: '', c: '', d: '', correct: 'A', marks, negative });
+const blank = (marks, negative) => ({ text: '', a: '', b: '', c: '', d: '', correct: 'A', marks, negative, explanation: '' });
 const fresh = () => ({ title: '', description: '', duration: 30, marks: 1, negative: 0.25 });
 
 export default function AdminCreate() {
@@ -20,7 +20,7 @@ export default function AdminCreate() {
   const importQuestions = (list) => {
     const mapped = list.map((q) => ({
       text: q.question_text, a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d,
-      correct: q.correct_option, marks: exam.marks, negative: exam.negative,
+      correct: q.correct_option, marks: exam.marks, negative: exam.negative, explanation: q.explanation || '',
     }));
     setQuestions((prev) => {
       const onlyEmpty = prev.length === 1 && !prev[0].text && !prev[0].a;
@@ -45,7 +45,7 @@ export default function AdminCreate() {
           duration_minutes: Number(exam.duration),
           questions: questions.map((q) => ({
             question_text: q.text, option_a: q.a, option_b: q.b, option_c: q.c, option_d: q.d,
-            correct_option: q.correct, marks: q.marks, negative_marks: q.negative,
+            correct_option: q.correct, marks: q.marks, negative_marks: q.negative, explanation: q.explanation,
           })),
         },
       });
@@ -56,7 +56,7 @@ export default function AdminCreate() {
   if (created) {
     const url = `${window.location.origin}/exam/${created}`;
     return (
-      <div className="space-y-4 rounded-xl border bg-white p-6">
+      <div className="card mx-auto max-w-xl space-y-4 p-6">
         <h1 className="text-xl font-bold text-green-700">Exam created 🎉</h1>
         <p className="break-all rounded bg-slate-100 p-2 text-sm">{url}</p>
         <ShareButtons url={url} title={exam.title} />
@@ -68,10 +68,13 @@ export default function AdminCreate() {
   }
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-2xl font-bold">Create Exam</h1>
+    <div className="mx-auto max-w-2xl space-y-5">
+      <div>
+        <h1 className="text-2xl font-extrabold">Create an exam</h1>
+        <p className="text-sm text-slate-500">Upload a question page photo or type questions by hand. Students get a shareable link and a leaderboard.</p>
+      </div>
 
-      <div className="space-y-3 rounded-xl border bg-white p-4">
+      <div className="card space-y-3 p-4">
         <input type="password" className="input" placeholder="Admin key (leave empty if public creation is on)" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} />
         <input className="input" placeholder="Exam title" value={exam.title} onChange={(e) => setExam({ ...exam, title: e.target.value })} />
         <textarea className="input" rows={2} placeholder="Description (optional)" value={exam.description} onChange={(e) => setExam({ ...exam, description: e.target.value })} />

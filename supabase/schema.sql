@@ -22,7 +22,9 @@ create table if not exists public.questions (
   option_d text not null,
   correct_option char(1) not null check (correct_option in ('A','B','C','D')),
   marks numeric(5,2) not null default 1 check (marks >= 0),
-  negative_marks numeric(5,2) not null default 0 check (negative_marks >= 0)
+  negative_marks numeric(5,2) not null default 0 check (negative_marks >= 0),
+  explanation text,
+  ai_explanation text
 );
 create index if not exists questions_exam_idx on public.questions (exam_id, position);
 
@@ -35,6 +37,7 @@ create table if not exists public.attempts (
   correct int not null,
   wrong int not null,
   unanswered int not null,
+  time_taken_seconds int,
   answers jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );

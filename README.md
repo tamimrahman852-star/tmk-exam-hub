@@ -47,3 +47,9 @@ npm run dev               # http://localhost:5173
 1. Get a free key at https://aistudio.google.com/apikey.
 2. On the server set `GEMINI_API_KEY` (never put it in the client or GitHub). Optional: `GEMINI_MODEL` (comma-separated fallback list, default `gemini-3.5-flash,gemini-3.6-flash,gemini-3.1-flash-lite`).
 3. `PUBLIC_CREATE=false` (default): only people with `ADMIN_KEY` can upload/create. `PUBLIC_CREATE=true`: anyone can, limited per IP per hour by `EXTRACT_LIMIT` and `CREATE_LIMIT`.
+
+## Explanations, leaderboard (v2)
+- **Run the migration once** in Supabase > SQL Editor: `supabase/migrations/002_explanations_leaderboard.sql` (adds `explanation`, `ai_explanation`, `time_taken_seconds`).
+- Each question can have a creator-written explanation. If it is empty, students can tap "Show explanation" after submitting and the AI writes one (cached, so it is generated only once per question). Optional env: `EXPLAIN_LIMIT` (AI explanations per IP per hour, default 30).
+- Every exam has a leaderboard (best attempt per name, ranked by score then time).
+- Students cannot clear an answer once chosen and can only pick one option per question.

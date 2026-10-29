@@ -19,6 +19,7 @@ export function evaluate(questions, answers = {}) {
       options: { A: q.option_a, B: q.option_b, C: q.option_c, D: q.option_d },
       chosen,
       correct_option: q.correct_option,
+      explanation: q.explanation || null, // written by the exam creator (AI one is fetched on demand)
       status,
     };
   });

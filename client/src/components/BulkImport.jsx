@@ -30,10 +30,10 @@ export default function BulkImport({ onImport, adminKey }) {
   };
 
   return (
-    <div className="space-y-2 rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50 p-4">
+    <div className="space-y-2 rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/70 p-4">
       <p className="font-semibold text-indigo-800">📸 Upload a question page (AI)</p>
       <p className="text-xs text-slate-600">
-        Upload one or more photos. All questions, options and the answer key (if printed on the page) are filled in automatically.
+        Upload one or more photos. All questions, options, the answer key and any printed explanations are filled in automatically.
       </p>
       <label className={`btn cursor-pointer ${busy ? 'pointer-events-none opacity-50' : ''}`}>
         {busy ? 'Working…' : 'Choose image(s)'}

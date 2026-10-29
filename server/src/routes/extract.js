@@ -1,34 +1,8 @@
 import { Router } from 'express';
 import { makeGuard } from '../middleware/guard.js';
+import { generate, textOf } from '../utils/gemini.js';
 
 const router = Router();
-
-// GEMINI_MODEL can be a comma-separated list. Each model is tried (with one retry on overload)
-// before falling back to the next one.
-const MODELS = (process.env.GEMINI_MODEL || 'gemini-3.5-flash,gemini-3.6-flash,gemini-3.1-flash-lite')
-  .split(',').map((m) => m.trim()).filter(Boolean);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-async function generate(body) {
-  let last = { ok: false, status: 500 };
-  for (const model of MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-        body: JSON.stringify(body),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (r.ok) return { ok: true, data };
-      last = { ok: false, status: r.status };
-      console.error(`Gemini error [${model}] ${r.status}`, JSON.stringify(data).slice(0, 300));
-      if ([400, 401, 403].includes(r.status)) return last; // key/request problem: other models won't help
-      if (r.status === 404) break;                           // this model name is unavailable: next model
-      await sleep(1500);
-    }
-  }
-  return last;
-}
 
 const PROMPT = `This is a photo of a question paper / question bank page. It may be in Bangla, English or mixed.
 Extract EVERY multiple-choice question visible on the page, in order.
@@ -39,6 +13,7 @@ Rules:
 - Options are labelled (a) (b) (c) (d). Put them in option_a..option_d WITHOUT the label.
 - Remove the question number from question_text.
 - If the page has an answer key (for example a table like "21. d  22. c"), use it to set correct_option by matching the question number. If there is no key entry for a question, set correct_option to null. Never solve the question yourself.
+- If the page prints an explanation / solution (ব্যাখ্যা) for a question, copy it into explanation. Otherwise set explanation to null. Never write explanations yourself.
 - Ignore headers, footers, page numbers, ads, pen marks and circles around numbers.
 - Skip a question if it does not have four readable options.
 Return JSON only.`;
@@ -57,6 +32,7 @@ const schema = {
           option_c: { type: 'STRING' },
           option_d: { type: 'STRING' },
           correct_option: { type: 'STRING', enum: ['A', 'B', 'C', 'D'], nullable: true },
+          explanation: { type: 'STRING', nullable: true },
         },
         required: ['question_text', 'option_a', 'option_b', 'option_c', 'option_d'],
       },
@@ -84,11 +60,9 @@ router.post('/', makeGuard(Number(process.env.EXTRACT_LIMIT) || 10), async (req,
           : 'The AI could not process this image. Check the server GEMINI_API_KEY / GEMINI_MODEL.',
       });
     }
-    const data = out.data;
 
-    const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
     let parsed;
-    try { parsed = JSON.parse(text); } catch { return res.status(502).json({ error: 'Could not read the AI response. Try a clearer photo.' }); }
+    try { parsed = JSON.parse(textOf(out.data)); } catch { return res.status(502).json({ error: 'Could not read the AI response. Try a clearer photo.' }); }
 
     const questions = (parsed.questions || [])
       .filter((q) => q.question_text && q.option_a && q.option_b && q.option_c && q.option_d)
@@ -97,6 +71,7 @@ router.post('/', makeGuard(Number(process.env.EXTRACT_LIMIT) || 10), async (req,
         option_a: q.option_a.trim(), option_b: q.option_b.trim(),
         option_c: q.option_c.trim(), option_d: q.option_d.trim(),
         correct_option: ['A', 'B', 'C', 'D'].includes(q.correct_option) ? q.correct_option : '',
+        explanation: q.explanation?.trim() || '',
       }));
 
     if (!questions.length) return res.status(422).json({ error: 'No questions found in this image.' });

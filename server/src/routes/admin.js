@@ -29,6 +29,7 @@ router.post('/exams', createGuard, wrap(async (req, res) => {
       option_a: q.option_a.trim(), option_b: q.option_b.trim(),
       option_c: q.option_c.trim(), option_d: q.option_d.trim(),
       correct_option: correct,
+      explanation: q.explanation?.trim() || null,
       marks: Math.abs(Number(q.marks) || 1),
       negative_marks: Math.abs(Number(q.negative_marks) || 0), // "-0.25" is stored as 0.25
     });
