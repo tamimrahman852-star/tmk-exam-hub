@@ -10,10 +10,57 @@ export default function AdminCreate() {
   const [exam, setExam] = useState({ title: '', description: '', duration: 30 });
   const [questions, setQuestions] = useState([emptyQ()]);
   const [busy, setBusy] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const [error, setError] = useState('');
   const [created, setCreated] = useState(null);
 
   const patch = (i, p) => setQuestions((qs) => qs.map((q, idx) => (idx === i ? { ...q, ...p } : q)));
+
+  // Gemini AI Image Upload & Parse Handler
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setParsing(true);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      // Admin key headers-এ পাঠানো যাতে প্রয়োজনমতো ভ্যালিডেশন কাজ করে
+      const res = await api('/api/admin/parse-image-exam', {
+        method: 'POST',
+        headers: { 'x-admin-key': adminKey },
+        body: formData,
+      });
+
+      if (res.success && res.data) {
+        setExam((prev) => ({
+          ...prev,
+          title: res.data.title || prev.title,
+        }));
+
+        const mappedQuestions = (res.data.questions || []).map((q) => ({
+          text: q.question_text || '',
+          a: q.option_a || '',
+          b: q.option_b || '',
+          c: q.option_c || '',
+          d: q.option_d || '',
+          correct: (q.correct_option || 'A').toUpperCase(),
+          marks: 1,
+          negative: 0.25,
+        }));
+
+        if (mappedQuestions.length > 0) {
+          setQuestions(mappedQuestions);
+        }
+      }
+    } catch (e) {
+      setError('Image parse korte somossa hoyeche: ' + (e.message || 'Unknown error'));
+    } finally {
+      setParsing(false);
+    }
+  };
 
   const save = async () => {
     setError(''); setBusy(true);
@@ -54,6 +101,20 @@ export default function AdminCreate() {
     <div className="space-y-5">
       <h1 className="text-2xl font-bold">Create Exam</h1>
 
+      {/* AI Image Upload Section */}
+      <div className="space-y-2 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/50 p-4">
+        <label className="block text-sm font-semibold text-indigo-900">
+          🤖 AI Image to MCQ Parser (প্রশ্নপত্রের ছবি আপলোড করুন):
+        </label>
+        <input 
+          type="file" 
+          accept="image/*" 
+          onChange={handleImageUpload} 
+          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+        />
+        {parsing && <p className="text-xs text-indigo-600 animate-pulse font-medium">Gemini AI chobi theke question ebong answer gulo parse korche...</p>}
+      </div>
+
       <div className="space-y-3 rounded-xl border bg-white p-4">
         <input type="password" className="input" placeholder="Admin key" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} />
         <input className="input" placeholder="Exam title" value={exam.title} onChange={(e) => setExam({ ...exam, title: e.target.value })} />
@@ -70,7 +131,7 @@ export default function AdminCreate() {
 
       <button className="btn-ghost w-full" onClick={() => setQuestions((qs) => [...qs, emptyQ()])}>+ Add question</button>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="btn w-full" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save & get share link'}</button>
+      <button className="btn w-full" disabled={busy || parsing} onClick={save}>{busy ? 'Saving…' : 'Save & get share link'}</button>
     </div>
   );
 }
