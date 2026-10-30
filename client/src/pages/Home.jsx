@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import InspirationWidget from '../components/InspirationWidget.jsx';
 
 const features = [
   ['⏱', 'Timed exams', 'Real exam pressure with a live countdown and negative marking.'],
@@ -29,6 +30,8 @@ export default function Home() {
           <Link to="/admin" className="rounded-xl border border-white/40 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/10">Create an exam</Link>
         </div>
       </section>
+
+      <InspirationWidget />
 
       <section className="grid gap-3 sm:grid-cols-3">
         {features.map(([icon, title, text], i) => (
