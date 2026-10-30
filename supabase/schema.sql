@@ -43,7 +43,15 @@ create table if not exists public.attempts (
 );
 create index if not exists attempts_exam_idx on public.attempts (exam_id, created_at desc);
 
+create table if not exists public.daily_quizzes (
+  quiz_date date primary key,
+  source text not null default 'ai',
+  questions jsonb not null,
+  created_at timestamptz not null default now()
+);
+
 -- Only the backend (service role key) touches the data; block direct anon access.
 alter table public.exams enable row level security;
 alter table public.questions enable row level security;
 alter table public.attempts enable row level security;
+alter table public.daily_quizzes enable row level security;

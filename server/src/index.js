@@ -4,6 +4,7 @@ import cors from 'cors';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
 import extractRoutes from './routes/extract.js';
+import dailyRoutes from './routes/daily.js';
 
 const app = express();
 const origins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()).filter(Boolean);
@@ -15,6 +16,7 @@ app.use(express.json({ limit: '1mb' }));
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/exams', publicRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/daily-quiz', dailyRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

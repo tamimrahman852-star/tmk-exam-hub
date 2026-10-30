@@ -25,3 +25,27 @@ export function useStoredList(key) {
   }, [key]);
   return list;
 }
+
+// Same idea for a single object (for example the daily activity log).
+export function readObj(key) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key) || '{}');
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch { return {}; }
+}
+
+export function writeObj(key, obj) {
+  try { localStorage.setItem(key, JSON.stringify(obj)); } catch { /* storage full or blocked */ }
+  window.dispatchEvent(new Event(EVT));
+}
+
+export function useStoredObject(key) {
+  const [obj, setObj] = useState(() => readObj(key));
+  useEffect(() => {
+    const sync = () => setObj(readObj(key));
+    window.addEventListener(EVT, sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener(EVT, sync); window.removeEventListener('storage', sync); };
+  }, [key]);
+  return obj;
+}

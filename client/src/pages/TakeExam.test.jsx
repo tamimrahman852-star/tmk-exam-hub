@@ -106,6 +106,13 @@ test('submit sends only the first choice, then result, explanations and leaderbo
   expect(JSON.parse(localStorage.getItem('tmk-bookmarks-v1')).map((b) => b.id)).toEqual(['q2']);
   expect(await screen.findByText(/1 wrong question saved/i)).toBeInTheDocument();
 
+  // wrong answers go to the Mistake Book automatically and the activity feeds the streak
+  expect(JSON.parse(localStorage.getItem('tmk-mistakes-v1')).map((m) => m.id)).toEqual(['q2']);
+  expect(JSON.parse(localStorage.getItem('tmk-mistakes-v1'))[0]).toMatchObject({ source: 'exam', origin: 'Chemistry Test', slug: 'chem' });
+  expect(screen.getByText(/1 wrong question was added to your Mistake Book/i)).toBeInTheDocument();
+  const act = Object.values(JSON.parse(localStorage.getItem('tmk-activity-v1')))[0];
+  expect(act).toMatchObject({ exams: 1, quizzes: 0, questions: 2 });
+
   // leaderboard shows points, correct, wrong and skipped for each user
   await screen.findByText('Rahim');
   expect(screen.getAllByText('Karim').length).toBeGreaterThan(0);

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { mmss, num } from '../utils/format.js';
 import ShareButtons from '../components/ShareButtons.jsx';
 import ResultView from '../components/ResultView.jsx';
 import Leaderboard from '../components/Leaderboard.jsx';
 import { saveAttempt } from '../utils/history.js';
+import { recordMistakes } from '../utils/mistakes.js';
+import { recordActivity } from '../utils/activity.js';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -45,6 +47,8 @@ export default function TakeExam() {
       });
       localStorage.removeItem(endKey);
       saveAttempt(r, exam); // feeds the dashboard analytics on this device
+      recordMistakes(r.breakdown, { origin: exam.title, source: 'exam', slug }); // wrong answers -> Mistake Book
+      recordActivity({ type: 'exam', questions: r.correct + r.wrong });          // study streak + daily goal
       setResult(r);
       setPhase('done');
       window.scrollTo({ top: 0 });
@@ -134,6 +138,12 @@ export default function TakeExam() {
   // ---------- Result ----------
   if (phase === 'done') return (
     <div className="mx-auto max-w-2xl space-y-5">
+      {result.wrong > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-rose-100 bg-rose-50/70 px-4 py-3 text-sm">
+          <span className="text-rose-800">📕 {result.wrong} wrong question{result.wrong === 1 ? ' was' : 's were'} added to your Mistake Book.</span>
+          <Link to="/mistakes" className="font-semibold text-rose-700 hover:underline">Review mistakes →</Link>
+        </div>
+      )}
       <ResultView result={result} slug={slug} title={exam.title} />
       <Leaderboard slug={slug} meId={result.attemptId} />
       <div className="card p-4">

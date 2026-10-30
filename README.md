@@ -71,3 +71,9 @@ Image import accepts JPG, PNG, WEBP and PDF (up to 5 MB).
 - `AnalyticsWidget`: exams taken, average score, best score and accuracy meter, from exams taken on this device.
 - `ResultShareCard`: result card + poster image shared with the Web Share API, with clipboard copy as fallback.
 - Bookmarks (`/bookmarks`): save any question or all wrong questions from a result for revision. History and bookmarks are stored in the browser (localStorage), so they do not follow the student to another device.
+
+## Daily quiz, Mistake Book and streaks (v4)
+- **Run `supabase/migrations/003_daily_quiz.sql` once** in Supabase > SQL Editor. Without it the quiz still works, but it lives in server memory only (a restart can produce different questions on the same day).
+- `DailyQuizWidget` + `/api/daily-quiz`: 5 questions a day (Physics, Chemistry, Mathematics, Biology). Gemini writes 8 candidates, a second AI pass solves them independently and only agreeing questions are kept. If the AI is down the quiz is built from the existing question bank. The first visitor of the day triggers generation; everyone then sees the same cached questions. Answers and explanations never reach the browser until the quiz is submitted.
+- `MistakeBook` (home card) + `/mistakes` (`ReviewMistakes`): wrong answers from exams and the daily quiz are collected automatically; revision mode removes a question when it is answered correctly.
+- `StreakWidget`: streak = consecutive days with at least one exam or quiz, plus a daily question goal. Mistakes, streaks and quiz results are stored in the browser (localStorage).
