@@ -4,6 +4,7 @@ import Navbar from './components/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import TakeExam from './pages/TakeExam.jsx';
 import AdminCreate from './pages/AdminCreate.jsx';
+import Bookmarks from './pages/Bookmarks.jsx';
 
 function OfflineBanner() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/exam/:slug" element={<TakeExam />} />
           <Route path="/admin" element={<AdminCreate />} />
+          <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="*" element={<p className="py-20 text-center text-slate-500">Page not found.</p>} />
         </Routes>
         </div>

@@ -64,3 +64,10 @@ npm run dev               # http://localhost:5173
 
 ## Import files
 Image import accepts JPG, PNG, WEBP and PDF (up to 5 MB).
+
+## Dashboard widgets (v3)
+- `CountdownWidget`: live countdown to DU Science/Arts/Business, MBBS and BUET. Edit dates in `client/src/utils/countdown.js` (counts down to 12:00 AM Dhaka time on exam day; confirm dates with the official notices).
+- `InspirationWidget`: Quotable API quote (falls back to built-in quotes when the API is down) + study dua with recitation and Bangla translation.
+- `AnalyticsWidget`: exams taken, average score, best score and accuracy meter, from exams taken on this device.
+- `ResultShareCard`: result card + poster image shared with the Web Share API, with clipboard copy as fallback.
+- Bookmarks (`/bookmarks`): save any question or all wrong questions from a result for revision. History and bookmarks are stored in the browser (localStorage), so they do not follow the student to another device.

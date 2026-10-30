@@ -94,11 +94,17 @@ test('submit sends only the first choice, then result, explanations and leaderbo
   await user.click(screen.getByRole('button', { name: /^submit exam/i }));
   await user.click(await screen.findByRole('button', { name: /^submit$/i }));
 
-  await screen.findByText(/accuracy/i);
+  await screen.findByText(/victory card/i);
   const submit = calls.find((c) => c.url.endsWith('/submit'));
   expect(submit.method).toBe('POST');
   expect(submit.body.studentName).toBe('Karim');
   expect(submit.body.answers).toEqual({ q1: 'B', q2: 'A' });
+
+  // the attempt feeds the dashboard analytics, and wrong questions can be bookmarked
+  expect(JSON.parse(localStorage.getItem('tmk-history-v1'))[0]).toMatchObject({ attemptId: result.attemptId, title: 'Chemistry Test', correct: 1, wrong: 1 });
+  await user.click(screen.getByRole('button', { name: /save all wrong/i }));
+  expect(JSON.parse(localStorage.getItem('tmk-bookmarks-v1')).map((b) => b.id)).toEqual(['q2']);
+  expect(await screen.findByText(/1 wrong question saved/i)).toBeInTheDocument();
 
   // leaderboard shows points, correct, wrong and skipped for each user
   await screen.findByText('Rahim');

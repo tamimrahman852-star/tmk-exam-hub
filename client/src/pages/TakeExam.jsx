@@ -5,6 +5,7 @@ import { mmss, num } from '../utils/format.js';
 import ShareButtons from '../components/ShareButtons.jsx';
 import ResultView from '../components/ResultView.jsx';
 import Leaderboard from '../components/Leaderboard.jsx';
+import { saveAttempt } from '../utils/history.js';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -43,6 +44,7 @@ export default function TakeExam() {
         body: { studentName: name.trim(), answers: answersRef.current, timeTaken },
       });
       localStorage.removeItem(endKey);
+      saveAttempt(r, exam); // feeds the dashboard analytics on this device
       setResult(r);
       setPhase('done');
       window.scrollTo({ top: 0 });
@@ -132,7 +134,7 @@ export default function TakeExam() {
   // ---------- Result ----------
   if (phase === 'done') return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <ResultView result={result} slug={slug} />
+      <ResultView result={result} slug={slug} title={exam.title} />
       <Leaderboard slug={slug} meId={result.attemptId} />
       <div className="card p-4">
         <p className="mb-2 text-sm font-semibold text-slate-700">Share this exam</p>

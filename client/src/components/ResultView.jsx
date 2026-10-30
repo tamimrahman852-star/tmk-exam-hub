@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { mmss, num } from '../utils/format.js';
+import ResultShareCard from './ResultShareCard.jsx';
+import BookmarkButton from './BookmarkButton.jsx';
+import { addBookmarks, makeBookmark } from '../utils/bookmarks.js';
 
 function useCountUp(target, ms = 1000) {
   const [v, setV] = useState(0);
@@ -91,8 +94,15 @@ const border = { correct: 'border-l-green-500', wrong: 'border-l-red-500', unans
 const badge = { correct: 'bg-green-100 text-green-700', wrong: 'bg-red-100 text-red-700', unanswered: 'bg-slate-100 text-slate-600' };
 const label = { correct: '✓ Correct', wrong: '✗ Wrong', unanswered: '➖ Skipped' };
 
-export default function ResultView({ result, slug }) {
+export default function ResultView({ result, slug, title = '' }) {
   const [filter, setFilter] = useState('all');
+  const [savedMsg, setSavedMsg] = useState('');
+  const exam = { slug, title };
+  const saveAllWrong = () => {
+    const n = addBookmarks(result.breakdown.filter((q) => q.status === 'wrong').map((q) => makeBookmark(q, exam)));
+    setSavedMsg(n ? `${n} wrong question${n === 1 ? '' : 's'} saved` : 'All wrong questions are already saved');
+    setTimeout(() => setSavedMsg(''), 2500);
+  };
   const pct = result.totalMarks > 0 ? (result.score / result.totalMarks) * 100 : 0;
   const attempted = result.correct + result.wrong;
   const accuracy = attempted ? Math.round((result.correct / attempted) * 100) : 0;
@@ -124,12 +134,18 @@ export default function ResultView({ result, slug }) {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <ResultShareCard result={result} title={title} url={window.location.href} />
+
+      <div className="flex flex-wrap items-center gap-2">
         {[['all', `All (${result.total})`], ['correct', `Correct (${result.correct})`], ['wrong', `Wrong (${result.wrong})`], ['unanswered', `Skipped (${result.unanswered})`]].map(([k, t]) => (
           <button key={k} onClick={() => setFilter(k)}
             className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${filter === k ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}>{t}</button>
         ))}
+        {result.wrong > 0 && (
+          <button onClick={saveAllWrong} className="ml-auto rounded-full bg-amber-50 px-3.5 py-1.5 text-sm font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100">🔖 Save all wrong ({result.wrong})</button>
+        )}
       </div>
+      {savedMsg && <p role="status" className="-mt-2 text-sm font-medium text-emerald-600">{savedMsg}</p>}
 
       {shown.map((q) => {
         const n = result.breakdown.indexOf(q) + 1;
@@ -137,7 +153,10 @@ export default function ResultView({ result, slug }) {
           <div key={q.id} className={`card animate-fade-up border-l-4 p-4 ${border[q.status]}`}>
             <div className="mb-3 flex items-start justify-between gap-3">
               <p className="font-medium leading-snug"><span className="text-indigo-600">{n}.</span> {q.question_text}</p>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${badge[q.status]}`}>{label[q.status]}</span>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${badge[q.status]}`}>{label[q.status]}</span>
+                <BookmarkButton q={q} exam={exam} />
+              </div>
             </div>
             <ul className="space-y-1.5 text-sm">
               {Object.entries(q.options).map(([k, v]) => {

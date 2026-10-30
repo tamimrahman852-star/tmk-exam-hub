@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import InspirationWidget from '../components/InspirationWidget.jsx';
+import CountdownWidget from '../components/CountdownWidget.jsx';
+import AnalyticsWidget from '../components/AnalyticsWidget.jsx';
 
 const features = [
   ['⏱', 'Timed exams', 'Real exam pressure with a live countdown and negative marking.'],
@@ -31,6 +33,8 @@ export default function Home() {
         </div>
       </section>
 
+      <CountdownWidget />
+      <AnalyticsWidget />
       <InspirationWidget />
 
       <section className="grid gap-3 sm:grid-cols-3">

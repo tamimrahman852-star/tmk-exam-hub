@@ -25,7 +25,7 @@ export default function InstallButton() {
 
   return (
     <>
-      <button onClick={click} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">⬇ Install</button>
+      <button onClick={click} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">⬇<span className="hidden sm:inline"> Install</span></button>
       {tip && (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40 p-4 sm:items-center sm:justify-center" onClick={() => setTip(false)}>
           <div className="animate-sheet w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
