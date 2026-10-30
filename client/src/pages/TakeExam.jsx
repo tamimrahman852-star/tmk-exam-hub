@@ -45,7 +45,7 @@ export default function TakeExam() {
       localStorage.removeItem(endKey);
       setResult(r);
       setPhase('done');
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0 });
     } catch (e) { submitted.current = false; setError(e.message); } finally { setBusy(false); }
   }, [slug, name, endKey, exam]);
 
@@ -59,7 +59,7 @@ export default function TakeExam() {
     localStorage.setItem(endKey, String(endAt.current));
     setLeft(Math.round((endAt.current - Date.now()) / 1000));
     setPhase('running');
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0 });
   };
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function TakeExam() {
   const totalMarks = useMemo(() => (exam ? exam.questions.reduce((s, q) => s + Number(q.marks), 0) : 0), [exam]);
 
   if (error && !exam) return <p className="py-20 text-center text-red-600">{error}</p>;
-  if (!exam) return <div className="mx-auto max-w-2xl"><div className="card h-64 animate-pulse bg-slate-100" /></div>;
+  if (!exam) return <div className="mx-auto max-w-2xl"><div className="card h-72 animate-pulse bg-slate-100" /></div>;
 
   const url = window.location.href;
   const n = exam.questions.length;
@@ -92,9 +92,9 @@ export default function TakeExam() {
   // ---------- Intro ----------
   if (phase === 'intro') return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div className="card overflow-hidden">
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white">
-          <h1 className="text-2xl font-extrabold leading-snug">{exam.title}</h1>
+      <div className="card animate-fade-up overflow-hidden">
+        <div className="bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-6 text-white">
+          <h1 className="text-2xl font-black leading-snug">{exam.title}</h1>
           {exam.description && <p className="mt-1 text-sm text-white/85">{exam.description}</p>}
         </div>
         <div className="space-y-5 p-6">
@@ -106,11 +106,11 @@ export default function TakeExam() {
             ))}
           </div>
 
-          <ul className="space-y-1.5 text-sm text-slate-600">
-            <li>• Every question has exactly one correct answer.</li>
-            <li>• Once you answer, you can switch to another option but cannot clear it.</li>
-            {negative && <li>• Wrong answers lose marks (negative marking).</li>}
-            <li>• The exam submits automatically when the timer ends.</li>
+          <ul className="space-y-2 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+            <li>🔒 <b>Your first choice is final.</b> Once you tap an option it is locked. You cannot change or remove it.</li>
+            <li>☝️ Every question has exactly one correct answer.</li>
+            {negative && <li>➖ Wrong answers lose marks (negative marking).</li>}
+            <li>⏱ The exam submits automatically when the timer ends.</li>
           </ul>
 
           <div>
@@ -142,55 +142,69 @@ export default function TakeExam() {
   );
 
   // ---------- Running ----------
-  const goTo = (i) => { setShowNav(false); setTimeout(() => document.getElementById(`q-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); };
+  const scrollTo = (i) => document.getElementById(`q-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const goTo = (i) => { setShowNav(false); setTimeout(() => scrollTo(i), 80); };
+
+  // An answer is final: ignored if the question already has one.
+  const choose = (i, q, k) => {
+    if (answersRef.current[q.id]) return;
+    setAnswers((a) => ({ ...a, [q.id]: k }));
+    if (i + 1 < n) setTimeout(() => scrollTo(i + 1), 550);
+  };
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-6">
-      <div className="card sticky top-[60px] z-20 px-4 py-2.5">
+      <div className="sticky top-[60px] z-20 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2.5 shadow-md backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <button onClick={() => setShowNav(true)} className="text-sm font-semibold text-indigo-700">☰ {answered}/{n} answered</button>
-          <span className={`rounded-full px-3 py-1 font-mono text-base font-bold ${left <= 60 ? 'animate-pulse bg-red-100 text-red-700' : 'bg-indigo-50 text-indigo-700'}`}>⏱ {mmss(left)}</span>
+          <span className={`rounded-full px-3 py-1 font-mono text-base font-bold tabular-nums ${left <= 60 ? 'animate-pulse bg-red-100 text-red-700' : 'bg-indigo-50 text-indigo-700'}`}>⏱ {mmss(left)}</span>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: `${(answered / n) * 100}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500" style={{ width: `${(answered / n) * 100}%` }} />
         </div>
       </div>
 
-      {exam.questions.map((q, i) => (
-        <div key={q.id} id={`q-${i}`} className="card p-4">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <p className="font-medium leading-snug"><span className="text-indigo-600">{i + 1}.</span> {q.question_text}</p>
-            <span className="chip shrink-0">+{num(q.marks)}{Number(q.negative_marks) > 0 && ` / -${num(q.negative_marks)}`}</span>
+      {exam.questions.map((q, i) => {
+        const locked = !!answers[q.id];
+        return (
+          <div key={q.id} id={`q-${i}`} className={`card scroll-mt-32 p-4 transition ${locked ? 'border-indigo-200' : ''}`}>
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <p className="font-medium leading-snug"><span className="mr-1 text-indigo-600">{i + 1}.</span>{q.question_text}</p>
+              <span className="chip shrink-0">+{num(q.marks)}{Number(q.negative_marks) > 0 && ` / -${num(q.negative_marks)}`}</span>
+            </div>
+            <div className="space-y-2">
+              {LETTERS.map((k) => {
+                const sel = answers[q.id] === k;
+                return (
+                  <label key={k} className={`flex items-start gap-3 rounded-xl border-2 px-3 py-3 transition duration-200
+                    ${sel ? 'animate-pop border-indigo-600 bg-indigo-50 shadow-sm' : locked ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-50' : 'cursor-pointer border-slate-200 hover:border-indigo-300 hover:bg-slate-50 active:scale-[0.99]'}`}>
+                    <input type="radio" name={q.id} className="sr-only" checked={sel} disabled={locked} onChange={() => choose(i, q, k)} />
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${sel ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{k}</span>
+                    <span className="flex-1 pt-0.5 text-[15px] leading-snug">{q[`option_${k.toLowerCase()}`]}</span>
+                    {sel && <span className="pt-0.5 text-sm" title="Locked">🔒</span>}
+                  </label>
+                );
+              })}
+            </div>
+            {locked && <p className="mt-2 text-xs font-medium text-indigo-600">🔒 Answer locked</p>}
           </div>
-          <div className="space-y-2">
-            {LETTERS.map((k) => {
-              const sel = answers[q.id] === k;
-              return (
-                <label key={k} className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 px-3 py-3 transition ${sel ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'}`}>
-                  <input type="radio" name={q.id} className="sr-only" checked={sel} onChange={() => setAnswers((a) => ({ ...a, [q.id]: k }))} />
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${sel ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{k}</span>
-                  <span className="pt-0.5 text-[15px] leading-snug">{q[`option_${k.toLowerCase()}`]}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
       {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
       <button className="btn w-full !py-3 text-base" disabled={busy} onClick={() => setConfirm(true)}>{busy ? 'Submitting…' : 'Submit exam'}</button>
 
       {showNav && (
-        <div className="fixed inset-0 z-40 flex items-end bg-black/40" onClick={() => setShowNav(false)}>
-          <div className="w-full rounded-t-3xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-40 flex items-end bg-black/40 backdrop-blur-[2px]" onClick={() => setShowNav(false)}>
+          <div className="animate-sheet mx-auto w-full max-w-2xl rounded-t-3xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <p className="font-bold">Question navigator</p>
-              <button onClick={() => setShowNav(false)} className="text-slate-400">✕</button>
+              <button onClick={() => setShowNav(false)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100">✕</button>
             </div>
             <div className="grid grid-cols-6 gap-2 sm:grid-cols-10">
               {exam.questions.map((q, i) => (
                 <button key={q.id} onClick={() => goTo(i)}
-                  className={`h-10 rounded-lg text-sm font-bold ${answers[q.id] ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{i + 1}</button>
+                  className={`h-10 rounded-lg text-sm font-bold transition active:scale-95 ${answers[q.id] ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{i + 1}</button>
               ))}
             </div>
             <p className="mt-3 text-xs text-slate-500"><span className="font-bold text-indigo-600">Blue</span> = answered · <span className="font-bold">Grey</span> = not answered</p>
@@ -199,9 +213,9 @@ export default function TakeExam() {
       )}
 
       {confirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center">
-            <p className="text-lg font-bold">Submit your exam?</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <div className="animate-pop w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <p className="text-lg font-extrabold">Submit your exam?</p>
             <p className="text-sm text-slate-600">
               You answered <b>{answered}</b> of <b>{n}</b>.
               {n - answered > 0 && <> <b className="text-red-600">{n - answered}</b> question(s) are still unanswered.</>}

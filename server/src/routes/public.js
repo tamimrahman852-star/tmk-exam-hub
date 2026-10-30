@@ -19,7 +19,7 @@ async function getExam(slug, cols) {
 // Best attempt per student name, ranked by score (desc) then time (asc).
 async function buildLeaderboard(examId, meId) {
   const { data, error } = await supabase.from('attempts')
-    .select('id,student_name,score,total_marks,correct,wrong,time_taken_seconds')
+    .select('id,student_name,score,total_marks,correct,wrong,unanswered,time_taken_seconds')
     .eq('exam_id', examId)
     .order('score', { ascending: false })
     .order('time_taken_seconds', { ascending: true })
@@ -38,13 +38,13 @@ async function buildLeaderboard(examId, meId) {
       rank: rows.length + 1,
       name: a.student_name || 'Anonymous',
       score: Number(a.score), totalMarks: Number(a.total_marks),
-      correct: a.correct, wrong: a.wrong,
+      correct: a.correct, wrong: a.wrong, skipped: a.unanswered ?? 0,
       timeTaken: a.time_taken_seconds,
       isMe,
     });
     if (isMe) myRank = rows.length;
   }
-  return { rows: rows.slice(0, 50), myRank, participants: rows.length };
+  return { rows: rows.slice(0, 50), myRank, participants: rows.length, topScore: rows[0]?.score ?? 0 };
 }
 
 // List published exams

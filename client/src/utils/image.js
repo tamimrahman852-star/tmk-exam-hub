@@ -12,7 +12,16 @@ export function resizeImage(file, max = 2200) {
       URL.revokeObjectURL(url);
       resolve({ image: c.toDataURL('image/jpeg', 0.85).split(',')[1], mimeType: 'image/jpeg' });
     };
-    img.onerror = () => reject(new Error('Could not open this image'));
+    img.onerror = () => reject(new Error('Could not open this image. Use a JPG or PNG photo.'));
     img.src = url;
+  });
+}
+
+export function readBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1]);
+    r.onerror = () => reject(new Error('Could not read this file'));
+    r.readAsDataURL(file);
   });
 }

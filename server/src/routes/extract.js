@@ -4,7 +4,9 @@ import { generate, textOf } from '../utils/gemini.js';
 
 const router = Router();
 
-const PROMPT = `This is a photo of a question paper / question bank page. It may be in Bangla, English or mixed.
+const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+const PROMPT = `This is a photo or PDF of a question paper / question bank page. It may be in Bangla, English or mixed.
 Extract EVERY multiple-choice question visible on the page, in order.
 
 Rules:
@@ -45,6 +47,7 @@ router.post('/', makeGuard(Number(process.env.EXTRACT_LIMIT) || 10), async (req,
   try {
     const { image, mimeType = 'image/jpeg' } = req.body || {};
     if (!image || typeof image !== 'string') return res.status(400).json({ error: 'No image received' });
+    if (!ALLOWED.includes(mimeType)) return res.status(415).json({ error: 'Upload a JPG, PNG or WEBP image, or a PDF' });
     if (image.length > 7_000_000) return res.status(413).json({ error: 'Image is too large' });
     if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'AI extraction is not configured on the server' });
 
