@@ -74,6 +74,7 @@ export default function AdminCreate() {
         <p className="text-sm text-slate-500">Upload a question page photo or type questions by hand. Students get a shareable link and a leaderboard.</p>
       </div>
 
+      <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Step 1 · Exam details</h2>
       <div className="card space-y-3 p-4">
         <input type="password" className="input" placeholder="Admin key (leave empty if public creation is on)" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} />
         <input className="input" placeholder="Exam title" value={exam.title} onChange={(e) => setExam({ ...exam, title: e.target.value })} />
@@ -92,6 +93,7 @@ export default function AdminCreate() {
         <p className="text-xs text-slate-400">Marks and negative marks apply to newly added or imported questions. You can still edit each question.</p>
       </div>
 
+      <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Step 2 · Add questions</h2>
       <BulkImport adminKey={adminKey} onImport={importQuestions} />
 
       {questions.map((q, i) => (
@@ -100,8 +102,13 @@ export default function AdminCreate() {
       ))}
 
       <button className="btn-ghost w-full" onClick={() => setQuestions((qs) => [...qs, blank(exam.marks, exam.negative)])}>+ Add question</button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="btn w-full" disabled={busy} onClick={save}>{busy ? 'Saving…' : `Save ${questions.length} question(s) & get share link`}</button>
+      {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+      <div className="sticky bottom-3 z-10 rounded-2xl border border-slate-200 bg-white/90 p-2.5 shadow-lg backdrop-blur">
+        <button className="btn w-full" disabled={busy} onClick={save}>
+          {busy ? 'Saving…' : `Step 3 · Save ${questions.length} question${questions.length === 1 ? '' : 's'} & get share link`}
+        </button>
+        {missing > 0 && <p className="mt-1.5 text-center text-xs font-medium text-red-600">{missing} question(s) still need a correct answer</p>}
+      </div>
     </div>
   );
 }

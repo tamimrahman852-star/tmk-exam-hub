@@ -53,3 +53,14 @@ npm run dev               # http://localhost:5173
 - Each question can have a creator-written explanation. If it is empty, students can tap "Show explanation" after submitting and the AI writes one (cached, so it is generated only once per question). Optional env: `EXPLAIN_LIMIT` (AI explanations per IP per hour, default 30).
 - Every exam has a leaderboard (best attempt per name, ranked by score then time).
 - Students cannot clear an answer once chosen and can only pick one option per question.
+
+## Install as an app (PWA)
+- The site is installable: on Android/Chrome tap **Install** in the navbar; on iPhone use Share > **Add to Home Screen**.
+- The app icon comes from `client/public/logo.png`. If you replace the logo, run `pip install pillow && python3 scripts/make-icons.py` and commit the new files in `client/public/icons/`.
+- Exams and results always load live from the server (never cached); only the app shell works offline.
+
+## Tests
+`cd client && npm test` checks the answer lock, submit, leaderboard and explanation flow.
+
+## Import files
+Image import accepts JPG, PNG, WEBP and PDF (up to 5 MB).

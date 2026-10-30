@@ -19,6 +19,7 @@ export default function Home() {
       <section className="animate-fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 px-6 py-12 text-white shadow-xl shadow-indigo-600/20 sm:px-10">
         <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-16 left-1/3 h-48 w-48 rounded-full bg-fuchsia-300/20 blur-3xl" />
+        <img src="/logo.png" alt="" className="absolute right-5 top-1/2 hidden h-36 w-36 -translate-y-1/2 rounded-full object-cover shadow-2xl ring-4 ring-white/40 sm:block sm:h-44 sm:w-44" />
         <h1 className="relative text-3xl font-black leading-tight sm:text-5xl">Practice smarter.<br />Compete harder.</h1>
         <p className="relative mt-4 max-w-md text-sm text-white/85 sm:text-base">
           Take timed exams, learn from explanations and climb the leaderboard.
