@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import QuranPlayer from './QuranPlayer.jsx';
+import { globalAyah } from '../utils/quran.js';
 
 // Curated locally on purpose: it loads instantly, works offline (installed app) and cannot break
 // when a third-party API is down. A new pair is shown every day; the buttons cycle through the rest.
@@ -18,13 +20,12 @@ const QUOTES = [
 ];
 
 const DUAS = [
-  { ar: 'رَبِّ زِدْنِي عِلْمًا', en: 'My Lord, increase me in knowledge.', ref: 'Surah Ta-Ha · 20:114 (excerpt)' },
-  { ar: 'رَبِّ ٱشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', en: 'My Lord, open up my heart for me and make my task easy for me.', ref: 'Surah Ta-Ha · 20:25-26' },
-  { ar: 'فَإِنَّ مَعَ ٱلْعُسْرِ يُسْرًا', en: 'Indeed, with hardship comes ease.', ref: 'Surah Ash-Sharh · 94:5' },
-  { ar: 'حَسْبُنَا ٱللَّهُ وَنِعْمَ ٱلْوَكِيلُ', en: 'Allah is sufficient for us, and He is the best disposer of affairs.', ref: "Surah Ali 'Imran · 3:173 (excerpt)" },
-  { ar: 'لَا يُكَلِّفُ ٱللَّهُ نَفْسًا إِلَّا وُسْعَهَا', en: 'Allah does not burden a soul beyond its capacity.', ref: 'Surah Al-Baqarah · 2:286 (excerpt)' },
-  { ar: 'هَلْ يَسْتَوِي ٱلَّذِينَ يَعْلَمُونَ وَٱلَّذِينَ لَا يَعْلَمُونَ', en: 'Are those who know equal to those who do not know?', ref: 'Surah Az-Zumar · 39:9 (excerpt)' },
-  { ar: 'وَمَن يَتَوَكَّلْ عَلَى ٱللَّهِ فَهُوَ حَسْبُهُ', en: 'Whoever puts their trust in Allah, He is enough for them.', ref: 'Surah At-Talaq · 65:3 (excerpt)' },
+  { ar: 'رَبِّ زِدْنِي عِلْمًا', en: 'My Lord, increase me in knowledge.', ref: 'Surah Ta-Ha · 20:114 (excerpt)', surah: 20, from: 114, to: 114, partial: true },
+  { ar: 'رَبِّ ٱشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', en: 'My Lord, open up my heart for me and make my task easy for me.', ref: 'Surah Ta-Ha · 20:25-26', surah: 20, from: 25, to: 26 },
+  { ar: 'فَإِنَّ مَعَ ٱلْعُسْرِ يُسْرًا ۝ إِنَّ مَعَ ٱلْعُسْرِ يُسْرًا', en: 'Indeed, with hardship comes ease. Indeed, with hardship comes ease.', ref: 'Surah Ash-Sharh · 94:5-6', surah: 94, from: 5, to: 6 },
+  { ar: 'ٱقْرَأْ بِٱسْمِ رَبِّكَ ٱلَّذِي خَلَقَ ۝ خَلَقَ ٱلْإِنسَانَ مِنْ عَلَقٍ ۝ ٱقْرَأْ وَرَبُّكَ ٱلْأَكْرَمُ ۝ ٱلَّذِي عَلَّمَ بِٱلْقَلَمِ ۝ عَلَّمَ ٱلْإِنسَانَ مَا لَمْ يَعْلَمْ', en: 'Read in the name of your Lord who created, created man from a clinging substance. Read, and your Lord is the most generous, who taught by the pen, taught man that which he knew not.', ref: 'Surah Al-Alaq · 96:1-5', surah: 96, from: 1, to: 5 },
+  { ar: 'ٱلرَّحْمَـٰنُ ۝ عَلَّمَ ٱلْقُرْآنَ ۝ خَلَقَ ٱلْإِنسَانَ ۝ عَلَّمَهُ ٱلْبَيَانَ', en: 'The Most Merciful taught the Quran, created man, and taught him speech.', ref: 'Surah Ar-Rahman · 55:1-4', surah: 55, from: 1, to: 4 },
+  { ar: 'رَبَّنَا آتِنَا فِي ٱلدُّنْيَا حَسَنَةً وَفِي ٱلْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ ٱلنَّارِ', en: 'Our Lord, give us good in this world and good in the Hereafter, and protect us from the punishment of the Fire.', ref: 'Surah Al-Baqarah · 2:201', surah: 2, from: 201, to: 201 },
 ];
 
 const dayOfYear = () => {
@@ -46,6 +47,10 @@ export default function InspirationWidget() {
 
   const quote = QUOTES[(base + qOffset) % QUOTES.length];
   const dua = DUAS[(base + dOffset + 3) % DUAS.length];
+  const ayahs = useMemo(
+    () => Array.from({ length: dua.to - dua.from + 1 }, (_, i) => globalAyah(dua.surah, dua.from + i)),
+    [dua]
+  );
 
   return (
     <section aria-label="Daily inspiration" className="grid gap-4 md:grid-cols-2">
@@ -74,15 +79,16 @@ export default function InspirationWidget() {
         <span aria-hidden className="pointer-events-none absolute right-4 top-3 select-none text-4xl opacity-20">🌙</span>
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-300">🌙 Study dua &amp; guidance</span>
-          <div key={dua.ref} className="animate-fade-up mt-4 text-center">
-            <p dir="rtl" lang="ar" className="font-arabic text-[28px] leading-[2] text-emerald-100 sm:text-3xl">{dua.ar}</p>
+          <div key={`text-${dua.ref}`} className="animate-fade-up mt-4 text-center">
+            <p dir="rtl" lang="ar" className={`font-arabic leading-[2] text-emerald-100 ${dua.ar.length > 70 ? 'text-2xl' : 'text-[28px] sm:text-3xl'}`}>{dua.ar}</p>
             <p className="mt-2 text-sm italic leading-relaxed text-emerald-50/90">“{dua.en}”</p>
             <p className="mt-3 inline-block rounded-full bg-amber-300/15 px-3 py-1 text-[11px] font-semibold text-amber-200">{dua.ref}</p>
           </div>
+          <QuranPlayer key={`player-${dua.ref}`} ayahs={ayahs} firstAyah={dua.from} partial={dua.partial} />
         </div>
         <div className="relative mt-5 flex items-center justify-between gap-3">
           <NextButton dark onClick={() => setDOffset((n) => n + 1)} label="Next dua" />
-          <p className="text-right text-[10px] leading-tight text-emerald-200/60">Meaning only, not a word-for-word translation.</p>
+          <p className="text-right text-[10px] leading-tight text-emerald-200/60">English is the meaning, not a word-for-word translation.</p>
         </div>
       </div>
     </section>

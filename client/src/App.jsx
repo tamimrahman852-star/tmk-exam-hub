@@ -25,12 +25,14 @@ export default function App() {
       <Navbar />
       <OfflineBanner />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+        <div key={pathname} className="animate-fade-up">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/exam/:slug" element={<TakeExam />} />
           <Route path="/admin" element={<AdminCreate />} />
           <Route path="*" element={<p className="py-20 text-center text-slate-500">Page not found.</p>} />
         </Routes>
+        </div>
       </main>
       <footer className="border-t bg-white py-5 text-center text-xs text-slate-400" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
         © {new Date().getFullYear()} TMK Exam Hub · Practice. Compete. Improve.

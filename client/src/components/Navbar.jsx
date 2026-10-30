@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import InstallButton from './InstallButton.jsx';
 
@@ -5,8 +6,16 @@ const link = ({ isActive }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`;
 
 export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <header className={`sticky top-0 z-30 border-b bg-white/85 backdrop-blur-md transition-shadow duration-300 ${scrolled ? 'border-slate-200 shadow-md shadow-slate-900/5' : 'border-slate-200/70'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2.5">
           {/* logo.png sits in client/public. The badge is centred in a tall image, so a square box with object-cover shows just the badge. */}

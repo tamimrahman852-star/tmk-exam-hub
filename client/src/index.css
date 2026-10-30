@@ -8,8 +8,8 @@ body { background-image: radial-gradient(circle at 10% -10%, rgba(99,102,241,.08
 @layer components {
   .card { @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,.04),0_4px_16px_rgba(15,23,42,.04)]; }
   .input { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition duration-200 hover:-translate-y-px hover:shadow-lg hover:shadow-indigo-600/30 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0; }
-  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:bg-slate-50 active:scale-[0.98]; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition duration-200 hover:-translate-y-px hover:shadow-lg hover:shadow-indigo-600/30 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300/60; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:bg-slate-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200; }
   .chip { @apply inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600; }
 }
 
@@ -21,3 +21,5 @@ body { background-image: radial-gradient(circle at 10% -10%, rgba(99,102,241,.08
 /* App-like feel when installed on a phone */
 html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
 button, label { -webkit-user-select: none; user-select: none; }
+
+::selection { background: rgba(99,102,241,.2); }
