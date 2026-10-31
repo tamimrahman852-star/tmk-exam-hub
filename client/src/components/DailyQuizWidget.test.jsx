@@ -9,11 +9,11 @@ import { dateKey } from '../utils/dates.js';
 
 const DATE = dhakaDate();
 const subjects = ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'Physics'];
-const quiz = { date: DATE, source: 'ai', questions: subjects.map((s, i) => ({ id: `${DATE}-${i + 1}`, subject: s, question_text: `${s} question ${i + 1}`, option_a: 'opt a', option_b: 'opt b', option_c: 'opt c', option_d: 'opt d' })) };
+const quiz = { date: DATE, source: 'ai', lang: 'bn', questions: subjects.map((s, i) => ({ id: `${DATE}-${i + 1}`, subject: s, question_text: `${s} question ${i + 1}`, option_a: 'opt a', option_b: 'opt b', option_c: 'opt c', option_d: 'opt d' })) };
 // student picks A everywhere; correct answers: Q1 A, Q2 A, Q3 A (right), Q4 B, Q5 C (wrong)
 const correct = ['A', 'A', 'A', 'B', 'C'];
 const result = {
-  date: DATE, source: 'ai', score: 3, total: 5, correct: 3, wrong: 2, unanswered: 0,
+  date: DATE, source: 'ai', lang: 'bn', score: 3, total: 5, correct: 3, wrong: 2, unanswered: 0,
   breakdown: quiz.questions.map((q, i) => ({ id: q.id, subject: q.subject, question_text: q.question_text, options: { A: 'opt a', B: 'opt b', C: 'opt c', D: 'opt d' }, chosen: 'A', correct_option: correct[i], explanation: `Why ${i + 1}`, status: correct[i] === 'A' ? 'correct' : 'wrong' })),
 };
 
@@ -59,6 +59,18 @@ test('plays 5 questions with locked answers, then shows score, explanations and 
   expect(readList('tmk-mistakes-v1').map((m) => m.id).sort()).toEqual([`${DATE}-4`, `${DATE}-5`]);
   expect(readList('tmk-mistakes-v1')[0]).toMatchObject({ source: 'daily', origin: 'Daily Quiz' });
   expect(readObj('tmk-activity-v1')[dateKey()]).toEqual({ exams: 0, quizzes: 1, questions: 5 });
+});
+
+test('a Bangla quiz shows Bangla subject names and Bangla text', async () => {
+  const user = userEvent.setup();
+  view();
+  expect(await screen.findByText('পদার্থবিজ্ঞান')).toBeInTheDocument();
+  expect(screen.getByText('রসায়ন')).toBeInTheDocument();
+  expect(screen.getByText('গণিত')).toBeInTheDocument();
+  expect(screen.getByText('জীববিজ্ঞান')).toBeInTheDocument();
+  expect(screen.getByText(/বাংলায়/)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: /start today/i }));
+  expect(screen.getByText('Physics question 1').getAttribute('lang')).toBe('bn');
 });
 
 test('after finishing, today\'s result stays on screen and the quiz is not offered again', async () => {

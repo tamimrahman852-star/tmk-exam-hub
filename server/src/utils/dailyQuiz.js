@@ -2,6 +2,8 @@ import { supabase } from '../supabase.js';
 import { generate, textOf } from './gemini.js';
 
 const SUBJECTS = ['Physics', 'Chemistry', 'Mathematics', 'Biology'];
+// Language of the AI-written questions. Bangla by default; set QUIZ_LANGUAGE=en on the server for English.
+const LANG = String(process.env.QUIZ_LANGUAGE || 'bn').toLowerCase() === 'en' ? 'en' : 'bn';
 const LETTERS = ['A', 'B', 'C', 'D'];
 const TTL_FALLBACK = 30 * 60 * 1000; // retry AI after 30 min if today's quiz came from the question bank
 
@@ -38,11 +40,12 @@ const warnDb = (e) => { if (!dbWarned) { console.warn('daily_quizzes table unava
 async function loadFromDb(date) {
   const { data, error } = await supabase.from('daily_quizzes').select('quiz_date,source,questions').eq('quiz_date', date).maybeSingle();
   if (error) { warnDb(error); return null; }
-  return data ? { date: data.quiz_date, source: data.source, questions: data.questions } : null;
+  return data ? { date: data.quiz_date, source: data.source, lang: data.questions?.[0]?.lang || 'en', questions: data.questions } : null;
 }
 async function saveToDb(quiz) {
-  const { error } = await supabase.from('daily_quizzes').insert({ quiz_date: quiz.date, source: quiz.source, questions: quiz.questions });
-  if (error && error.code !== '23505') warnDb(error); // 23505 = another instance saved it first
+  const { error } = await supabase.from('daily_quizzes')
+    .upsert({ quiz_date: quiz.date, source: quiz.source, questions: quiz.questions }, { onConflict: 'quiz_date' });
+  if (error) warnDb(error);
 }
 async function recentStems() {
   const { data, error } = await supabase.from('daily_quizzes').select('questions').order('quiz_date', { ascending: false }).limit(3);
@@ -89,6 +92,9 @@ Rules:
 - Exactly 4 options and exactly ONE correct answer. Distractors must be plausible.
 - Use well-established facts and standard textbook methods only. No ambiguous, opinion-based or diagram-based questions.
 - Numbers must be simple enough to solve by hand in under a minute.
+${LANG === 'bn'
+  ? `- Write the question, the options (when they are words) and the explanation in clear Bangla (বাংলা), in the style of HSC Bangla-medium textbooks and Bangladeshi admission-test papers. Keep formulas, symbols, units, chemical formulas and numbers in standard notation with English digits (H₂O, x², √, π, 10⁻³, m/s²). A well-known English technical term may be added in brackets when it helps.`
+  : '- Write everything in clear English.'}
 - Write formulas with Unicode (H₂O, x², √, π, Pb²⁺, 10⁻³).
 - Spread the correct answers across A, B, C and D.
 - explanation: 2 to 4 short sentences showing why the answer is correct.
@@ -146,24 +152,30 @@ async function buildQuiz(date) {
   if (questions.length < 5) questions = [...questions, ...(await fromBank(date, 5 - questions.length))];
   if (!questions.length) throw new Error('No questions available');
 
-  return { date, source, questions: questions.map((q, i) => ({ id: `${date}-${i + 1}`, ...q })) };
+  return { date, source, lang: LANG, questions: questions.map((q, i) => ({ id: `${date}-${i + 1}`, lang: LANG, ...q })) };
 }
 
 // ---------- public API ----------
+// A cached quiz is "fresh" if it is an AI quiz in the current language, or any quiz less than 30 minutes old.
+const fresh = (e) => e && ((e.quiz.source === 'ai' && e.quiz.lang === LANG) || Date.now() - e.at < TTL_FALLBACK);
+
 export async function getQuiz(date = dhakaDate()) {
+  const today = dhakaDate();
   const hit = memory.get(date);
-  if (hit && (hit.quiz.source === 'ai' || Date.now() - hit.at < TTL_FALLBACK)) return hit.quiz;
+  if (hit && (date !== today || fresh(hit))) return hit.quiz;       // past days: serve whatever we have
 
   const stored = await loadFromDb(date);
-  if (stored) { memory.set(date, { quiz: stored, at: Date.now() }); return stored; }
-  if (date !== dhakaDate()) return hit?.quiz || null; // past days are never generated
+  if (stored && (date !== today || stored.lang === LANG)) { memory.set(date, { quiz: stored, at: Date.now() }); return stored; }
+  if (date !== today) return hit?.quiz || null;                     // past days are never generated
 
+  // today: first visitor of the day, or the quiz language was switched
   if (inflight.has(date)) return inflight.get(date);
   const p = (async () => {
     try {
-      const quiz = await buildQuiz(date);
+      let quiz = await buildQuiz(date);
+      if (quiz.source !== 'ai' && stored) quiz = stored;            // AI is down: keep the quiz students already have
       memory.set(date, { quiz, at: Date.now() });
-      if (quiz.source === 'ai') await saveToDb(quiz);
+      if (quiz.source === 'ai' && quiz.lang === LANG) await saveToDb(quiz);
       return quiz;
     } finally { inflight.delete(date); }
   })();
@@ -172,7 +184,7 @@ export async function getQuiz(date = dhakaDate()) {
 }
 
 export const publicView = (quiz) => ({
-  date: quiz.date, source: quiz.source,
+  date: quiz.date, source: quiz.source, lang: quiz.lang || 'en',
   questions: quiz.questions.map(({ id, subject, question_text, option_a, option_b, option_c, option_d }) =>
     ({ id, subject, question_text, option_a, option_b, option_c, option_d })),
 });
@@ -190,5 +202,5 @@ export function evaluateQuiz(quiz, answers = {}) {
       chosen, correct_option: q.correct_option, explanation: q.explanation || null, status,
     };
   });
-  return { date: quiz.date, source: quiz.source, score: correct, total: quiz.questions.length, correct, wrong, unanswered, breakdown };
+  return { date: quiz.date, source: quiz.source, lang: quiz.lang || 'en', score: correct, total: quiz.questions.length, correct, wrong, unanswered, breakdown };
 }

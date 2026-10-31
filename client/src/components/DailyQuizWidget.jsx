@@ -12,6 +12,8 @@ const SUBJECT = {
   Biology: 'bg-rose-50 text-rose-700 ring-rose-200',
   Practice: 'bg-slate-100 text-slate-600 ring-slate-200',
 };
+const BN = { Physics: 'পদার্থবিজ্ঞান', Chemistry: 'রসায়ন', Mathematics: 'গণিত', Biology: 'জীববিজ্ঞান', Practice: 'অনুশীলন' };
+const subjectLabel = (s, lang) => (lang === 'bn' ? BN[s] || s : s);
 const chip = (s) => `inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${SUBJECT[s] || SUBJECT.Practice}`;
 
 // time until the next quiz (midnight in Dhaka)
@@ -21,17 +23,18 @@ const untilReset = () => {
 };
 
 function Review({ result }) {
+  const bn = result.lang === 'bn';
   return (
     <div className="space-y-3">
       {result.breakdown.map((q, n) => (
         <div key={q.id} className={`rounded-2xl border p-4 ${q.status === 'correct' ? 'border-emerald-200 bg-emerald-50/40' : q.status === 'wrong' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <span className={chip(q.subject)}>{q.subject}</span>
+            <span className={chip(q.subject)}>{subjectLabel(q.subject, result.lang)}</span>
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${q.status === 'correct' ? 'bg-emerald-100 text-emerald-700' : q.status === 'wrong' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>
               {q.status === 'correct' ? '✓ Correct' : q.status === 'wrong' ? '✗ Wrong' : '➖ Skipped'}
             </span>
           </div>
-          <p className="font-medium leading-snug text-slate-900"><span className="text-indigo-600">{n + 1}.</span> {q.question_text}</p>
+          <p lang={bn ? 'bn' : undefined} className={`font-medium text-slate-900 ${bn ? 'leading-relaxed' : 'leading-snug'}`}><span className="text-indigo-600">{n + 1}.</span> {q.question_text}</p>
           <ul className="mt-2 space-y-1.5 text-sm">
             {Object.entries(q.options).map(([k, v]) => {
               const ok = k === q.correct_option, bad = k === q.chosen && !ok;
@@ -44,7 +47,7 @@ function Review({ result }) {
               );
             })}
           </ul>
-          {q.explanation && <p className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-sm leading-relaxed text-slate-700">💡 {q.explanation}</p>}
+          {q.explanation && <p lang={bn ? 'bn' : undefined} className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-sm leading-relaxed text-slate-700">💡 {q.explanation}</p>}
         </div>
       ))}
     </div>
@@ -119,9 +122,9 @@ export default function DailyQuizWidget() {
         {state === 'ready' && (
           <div className="animate-fade-up">
             <p className="text-lg font-bold text-slate-900">5 fresh questions every day</p>
-            <p className="mt-1 text-sm text-slate-500">Physics, Chemistry, Mathematics and Biology at admission-test level. Takes about 3 minutes, with instant score and explanations.</p>
+            <p className="mt-1 text-sm text-slate-500">{quiz.lang === 'bn' ? 'বাংলায় পদার্থবিজ্ঞান, রসায়ন, গণিত ও জীববিজ্ঞান, ভর্তি পরীক্ষার মানের প্রশ্ন। ' : 'Physics, Chemistry, Mathematics and Biology at admission-test level. '}Takes about 3 minutes, with instant score and explanations.</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {[...new Set(quiz.questions.map((x) => x.subject))].map((s) => <span key={s} className={chip(s)}>{s}</span>)}
+              {[...new Set(quiz.questions.map((x) => x.subject))].map((s) => <span key={s} className={chip(s)}>{subjectLabel(s, quiz.lang)}</span>)}
             </div>
             <button className="btn mt-4 !px-6" onClick={() => { setI(0); setAnswers({}); setState('playing'); }}>Start today&apos;s quiz →</button>
           </div>
@@ -134,9 +137,9 @@ export default function DailyQuizWidget() {
             </div>
             <div className="mb-3 flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500">Question {i + 1} of {n}</span>
-              <span className={chip(q.subject)}>{q.subject}</span>
+              <span className={chip(q.subject)}>{subjectLabel(q.subject, quiz.lang)}</span>
             </div>
-            <p className="font-medium leading-snug text-slate-900">{q.question_text}</p>
+            <p lang={quiz.lang === 'bn' ? 'bn' : undefined} className={`font-medium text-slate-900 ${quiz.lang === 'bn' ? 'text-[17px] leading-relaxed' : 'leading-snug'}`}>{q.question_text}</p>
             <div className="mt-3 space-y-2">
               {LETTERS.map((k) => {
                 const sel = answers[q.id] === k, locked = !!answers[q.id];
@@ -144,7 +147,7 @@ export default function DailyQuizWidget() {
                   <label key={k} className={`flex items-start gap-3 rounded-xl border-2 px-3 py-3 transition duration-200 ${sel ? 'animate-pop border-indigo-600 bg-indigo-50' : locked ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-50' : 'cursor-pointer border-slate-200 hover:border-indigo-300 hover:bg-slate-50 active:scale-[0.99]'}`}>
                     <input type="radio" name={q.id} className="sr-only" checked={sel} disabled={locked} onChange={() => setAnswers((a) => (a[q.id] ? a : { ...a, [q.id]: k }))} />
                     <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${sel ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{k}</span>
-                    <span className="flex-1 pt-0.5 text-[15px] leading-snug">{q[`option_${k.toLowerCase()}`]}</span>
+                    <span lang={quiz.lang === 'bn' ? 'bn' : undefined} className={`flex-1 pt-0.5 text-[15px] ${quiz.lang === 'bn' ? 'leading-relaxed' : 'leading-snug'}`}>{q[`option_${k.toLowerCase()}`]}</span>
                     {sel && <span title="Locked">🔒</span>}
                   </label>
                 );
