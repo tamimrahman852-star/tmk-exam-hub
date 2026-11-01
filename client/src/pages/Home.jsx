@@ -45,6 +45,16 @@ export default function Home() {
       <AnalyticsWidget />
       <InspirationWidget />
 
+      <Link to="/quran" className="card group flex items-center gap-4 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md sm:p-5">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-3xl">📖</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg font-extrabold text-slate-900">Quran Tilawat Hub</span>
+          <span className="block text-sm text-slate-500">Listen to all 114 Surahs recited by Mishary Rashid Alafasy.</span>
+        </span>
+        <span className="hidden shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition group-hover:bg-indigo-700 sm:inline">Listen now →</span>
+        <span aria-hidden className="text-xl text-indigo-600 sm:hidden">→</span>
+      </Link>
+
       <section className="grid gap-3 sm:grid-cols-3">
         {features.map(([icon, title, text], i) => (
           <div key={title} className="card animate-fade-up p-4" style={{ animationDelay: `${i * 80}ms` }}>

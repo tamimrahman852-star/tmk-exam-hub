@@ -80,3 +80,8 @@ Image import accepts JPG, PNG, WEBP and PDF (up to 5 MB).
 
 ### Quiz language
 The daily quiz is written in **Bangla** by default (`QUIZ_LANGUAGE=bn`). Set `QUIZ_LANGUAGE=en` on the server for English. If today's quiz was already created in the other language, the server writes a new one the next time someone opens the quiz (and keeps the old one if the AI is down). Formulas, symbols, units and numbers stay in standard notation.
+
+## Quran Tilawat Hub (`/quran`, `QuranHub.jsx`)
+- All 114 surahs (number, English name, translation, Arabic name, ayah count, Makki/Madani) from the **Al-Quran Cloud** API, saved on the device after the first load.
+- Full-surah recitation by **Mishary Rashid Alafasy** from **MP3Quran**: the app looks up his audio server through the MP3Quran API and falls back to two backup servers if one fails.
+- Search, Makki/Madani filter, play / pause / previous / next, seek bar, repeat, auto-next and lock-screen controls. Needs an internet connection to listen. Leaving the page stops the audio.

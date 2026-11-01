@@ -6,6 +6,7 @@ import TakeExam from './pages/TakeExam.jsx';
 import AdminCreate from './pages/AdminCreate.jsx';
 import Bookmarks from './pages/Bookmarks.jsx';
 import ReviewMistakes from './pages/ReviewMistakes.jsx';
+import QuranHub from './components/QuranHub.jsx';
 
 function OfflineBanner() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/admin" element={<AdminCreate />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/mistakes" element={<ReviewMistakes />} />
+          <Route path="/quran" element={<QuranHub />} />
           <Route path="*" element={<p className="py-20 text-center text-slate-500">Page not found.</p>} />
         </Routes>
         </div>
