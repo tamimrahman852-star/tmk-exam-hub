@@ -5,6 +5,7 @@ import { mmss, num } from '../utils/format.js';
 import ShareButtons from '../components/ShareButtons.jsx';
 import ResultView from '../components/ResultView.jsx';
 import Leaderboard from '../components/Leaderboard.jsx';
+import Portal from '../components/Portal.jsx';
 import { saveAttempt } from '../utils/history.js';
 import { recordMistakes } from '../utils/mistakes.js';
 import { recordActivity } from '../utils/activity.js';
@@ -84,6 +85,15 @@ export default function TakeExam() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [phase]);
+
+  useEffect(() => {
+    if (!confirm && !showNav) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => { if (e.key === 'Escape') { setConfirm(false); setShowNav(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [confirm, showNav]);
 
   const totalMarks = useMemo(() => (exam ? exam.questions.reduce((s, q) => s + Number(q.marks), 0) : 0), [exam]);
 
@@ -207,8 +217,9 @@ export default function TakeExam() {
       <button className="btn w-full !py-3 text-base" disabled={busy} onClick={() => setConfirm(true)}>{busy ? 'Submitting…' : 'Submit exam'}</button>
 
       {showNav && (
+        <Portal>
         <div className="fixed inset-0 z-40 flex items-end bg-black/40 backdrop-blur-[2px]" onClick={() => setShowNav(false)}>
-          <div className="animate-sheet mx-auto w-full max-w-2xl rounded-t-3xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Question navigator" className="animate-sheet mx-auto w-full max-w-2xl rounded-t-3xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <p className="font-bold">Question navigator</p>
               <button onClick={() => setShowNav(false)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100">✕</button>
@@ -222,22 +233,25 @@ export default function TakeExam() {
             <p className="mt-3 text-xs text-slate-500"><span className="font-bold text-indigo-600">Blue</span> = answered · <span className="font-bold">Grey</span> = not answered</p>
           </div>
         </div>
+        </Portal>
       )}
 
       {confirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
-          <div className="animate-pop w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-2xl">
-            <p className="text-lg font-extrabold">Submit your exam?</p>
+        <Portal>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]" onClick={() => setConfirm(false)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="submit-title" className="animate-pop w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p id="submit-title" className="text-lg font-extrabold">Submit your exam?</p>
             <p className="text-sm text-slate-600">
               You answered <b>{answered}</b> of <b>{n}</b>.
               {n - answered > 0 && <> <b className="text-red-600">{n - answered}</b> question(s) are still unanswered.</>}
             </p>
             <div className="flex gap-2">
-              <button className="btn-ghost flex-1" onClick={() => setConfirm(false)}>Keep going</button>
+              <button className="btn-ghost flex-1" onClick={() => setConfirm(false)} autoFocus>Keep going</button>
               <button className="btn flex-1" onClick={submit}>Submit</button>
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

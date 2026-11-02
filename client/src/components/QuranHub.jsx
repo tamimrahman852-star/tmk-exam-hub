@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Portal from './Portal.jsx';
 import { RECITER_NAME, audioUrls, cachedSurahs, fetchSurahs, fmtTime, resolveAlafasy } from '../utils/quranHub.js';
 
 const TYPES = [['all', 'All Surahs'], ['Meccan', 'Makki'], ['Medinan', 'Madani']];
@@ -194,6 +195,7 @@ export default function QuranHub() {
       <p className="pb-2 text-center text-[11px] text-slate-400">Surah list from Al-Quran Cloud · Audio from MP3Quran. An internet connection is needed to listen.</p>
 
       {cur && current && (
+        <Portal>
         <div className="fixed inset-x-0 bottom-0 z-40 px-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <div role="region" aria-label="Audio player" className="animate-sheet mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl shadow-slate-900/15 backdrop-blur">
             <div className="flex items-center gap-3">
@@ -234,6 +236,7 @@ export default function QuranHub() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

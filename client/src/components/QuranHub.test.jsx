@@ -169,3 +169,14 @@ test('uses the saved surah list without calling the API again', async () => {
   expect((await screen.findAllByRole('button', { name: /Surah 1: Al-Faatiha/ })).length).toBe(2);
   expect(fetch.mock.calls.filter((c) => String(c[0]).includes('alquran')).length).toBe(1);
 });
+
+test('the player bar is attached to <body> so it stays at the bottom of the screen on a long page', async () => {
+  const user = userEvent.setup();
+  const { container } = render(<QuranHub />);
+  await screen.findByRole('button', { name: /Surah 1: Al-Faatiha/ });
+  await user.click(card(1));
+  const bar = player();
+  expect(container.contains(bar)).toBe(false);
+  expect(bar.parentElement.parentElement).toBe(document.body);
+  expect(bar.parentElement.className).toMatch(/fixed inset-x-0 bottom-0/);
+});

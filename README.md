@@ -85,3 +85,6 @@ The daily quiz is written in **Bangla** by default (`QUIZ_LANGUAGE=bn`). Set `QU
 - All 114 surahs (number, English name, translation, Arabic name, ayah count, Makki/Madani) from the **Al-Quran Cloud** API, saved on the device after the first load.
 - Full-surah recitation by **Mishary Rashid Alafasy** from **MP3Quran**: the app looks up his audio server through the MP3Quran API and falls back to two backup servers if one fails.
 - Search, Makki/Madani filter, play / pause / previous / next, seek bar, repeat, auto-next and lock-screen controls. Needs an internet connection to listen. Leaving the page stops the audio.
+
+### Popups
+Every popup and sheet (submit confirmation, question navigator, install tip, Quran player bar) is rendered through `components/Portal.jsx` straight into `<body>`. This keeps `position: fixed` tied to the screen even on very long pages; an animated or blurred parent element would otherwise move it to the middle of the page.

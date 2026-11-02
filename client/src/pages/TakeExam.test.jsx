@@ -131,3 +131,47 @@ test('submit sends only the first choice, then result, explanations and leaderbo
   expect(explain.url).toContain('/questions/q2/explain');
   expect(explain.body.attemptId).toBe(result.attemptId);
 });
+
+// ---- popups must always be in view, however long the page is ----
+async function toRunning(user) {
+  const view = setup();
+  await startExam(user);
+  return view;
+}
+
+test('the submit confirmation opens as a dialog on <body>, in view without scrolling, and can be dismissed', async () => {
+  const user = userEvent.setup();
+  const { container } = await toRunning(user);
+
+  await user.click(screen.getByRole('button', { name: /^submit exam/i }));
+  const dialog = screen.getByRole('dialog', { name: /submit your exam/i });
+  expect(container.contains(dialog)).toBe(false);                       // not inside the (animated, scrolling) page content
+  const overlay = dialog.parentElement;
+  expect(overlay.parentElement).toBe(document.body);                    // direct child of <body>: fixed means the screen
+  expect(overlay.className).toMatch(/fixed inset-0/);
+  expect(document.body.style.overflow).toBe('hidden');                  // page behind cannot scroll away from it
+  expect(within(dialog).getByRole('button', { name: /^submit$/i })).toBeInTheDocument();
+
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(document.body.style.overflow).toBe('');                        // scrolling restored
+
+  await user.click(screen.getByRole('button', { name: /^submit exam/i }));
+  await user.click(screen.getByRole('button', { name: /keep going/i }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: /^submit exam/i }));
+  await user.click(screen.getByRole('dialog', { name: /submit your exam/i }).parentElement);   // tap outside
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+test('the question navigator sheet is also attached to <body>', async () => {
+  const user = userEvent.setup();
+  const { container } = await toRunning(user);
+  await user.click(screen.getByRole('button', { name: /answered/i }));
+  const sheet = screen.getByRole('dialog', { name: /question navigator/i });
+  expect(container.contains(sheet)).toBe(false);
+  expect(sheet.parentElement.parentElement).toBe(document.body);
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});

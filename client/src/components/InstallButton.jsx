@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Portal from './Portal.jsx';
 
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -27,6 +28,7 @@ export default function InstallButton() {
     <>
       <button onClick={click} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">⬇<span className="hidden sm:inline"> Install</span></button>
       {tip && (
+        <Portal>
         <div className="fixed inset-0 z-50 flex items-end bg-black/40 p-4 sm:items-center sm:justify-center" onClick={() => setTip(false)}>
           <div className="animate-sheet w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <img src="/icons/icon-192.png" alt="" className="mx-auto h-16 w-16 rounded-2xl shadow" />
@@ -35,6 +37,7 @@ export default function InstallButton() {
             <button className="btn mt-4 w-full" onClick={() => setTip(false)}>Got it</button>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );
