@@ -7,7 +7,7 @@ const view = () => render(<MemoryRouter><About /></MemoryRouter>);
 test('shows exactly the profile details that were provided', () => {
   const { container } = view();
   expect(screen.getByRole('heading', { level: 1, name: 'Tamim Rahman' })).toBeInTheDocument();
-  expect(screen.getByText('(মোঃ তামিম ইসলাম)')).toBeInTheDocument();
+  expect(screen.getByText('(মোঃ তামিম রহমান)')).toBeInTheDocument();
   expect(screen.getByText('Software Developer & Technical Contributor')).toBeInTheDocument();
   expect(screen.getByText('A dedicated and result-oriented software developer specializing in building digital platforms, web applications, and automated utility solutions. Committed to engineering high-performance, user-centric systems and maintaining strict personal integrity, financial independence, and high standards of execution. Creator and administrator of TMK Exam Hub, an open-access digital assessment platform designed to support science-background admission candidates.')).toBeInTheDocument();
   expect(screen.getByText('tamimrahman852@gmail.com')).toBeInTheDocument();
