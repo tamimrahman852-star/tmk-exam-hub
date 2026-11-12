@@ -1,7 +1,7 @@
 // The developer details shown on the About page and used for key requests. Edit here only.
 export const DEVELOPER = {
   name: 'Tamim Rahman',
-  nameBn: 'মোঃ তামিম ইসলাম',
+  nameBn: 'মোঃ তামিম রহমান',
   role: 'Software Developer & Technical Contributor',
   email: 'tamimrahman852@gmail.com',
   phone: '01762324527',
