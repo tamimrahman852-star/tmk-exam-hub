@@ -29,7 +29,7 @@ export default function Navbar() {
         <nav className="flex items-center gap-1">
           <NavLink to="/" end className={link}>Exams</NavLink>
           <NavLink to="/bookmarks" className={link}>Saved{saved > 0 && <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{saved}</span>}</NavLink>
-          <NavLink to="/admin" className={link}>Create</NavLink>
+          <NavLink to="/upload-exam" className={link}>Create</NavLink>
           <InstallButton />
         </nav>
       </div>

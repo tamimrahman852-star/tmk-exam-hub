@@ -4,3 +4,4 @@ import '@testing-library/jest-dom/vitest';
 window.HTMLMediaElement.prototype.pause = () => {};
 window.HTMLMediaElement.prototype.play = () => Promise.resolve();
 HTMLCanvasElement.prototype.getContext = () => null;
+window.matchMedia ||= () => ({ matches: false, addEventListener() {}, removeEventListener() {} });

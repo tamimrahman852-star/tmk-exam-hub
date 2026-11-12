@@ -88,3 +88,22 @@ The daily quiz is written in **Bangla** by default (`QUIZ_LANGUAGE=bn`). Set `QU
 
 ### Popups
 Every popup and sheet (submit confirmation, question navigator, install tip, Quran player bar) is rendered through `components/Portal.jsx` straight into `<body>`. This keeps `position: fixed` tied to the screen even on very long pages; an animated or blurred parent element would otherwise move it to the middle of the page.
+
+## About, upload key and private feedback (v5)
+**Pages**
+- `/about`: developer profile (details live in `client/src/config/site.js`).
+- `/upload-exam`: the only way to reach the question form. The visitor enters the **Question Upload Key** (`ADMIN_KEY`); the server checks it (`GET /api/admin/check`) and only then is the form shown. The key is kept in `sessionStorage` (this tab only), never in `localStorage`. `/admin` redirects here. People who need a key are pointed to WhatsApp / Gmail.
+- `/feedback`: public form. Anyone can send, nobody can read.
+- `/admin/feedbacks`: private inbox, needs the **Feedback Admin Key**.
+
+**Two different keys (set both on Render)**
+| Env var | Opens | Notes |
+|---|---|---|
+| `ADMIN_KEY` | `/upload-exam` (create exams, read question images with AI) | sent as the `x-admin-key` header |
+| `FEEDBACK_KEY` | `/admin/feedbacks` | at least 10 characters and **must differ** from `ADMIN_KEY`, otherwise the inbox is switched off and a warning is logged. Generate with `openssl rand -base64 24` |
+
+**How the feedback inbox is protected**
+- Table `feedbacks` (run `supabase/migrations/004_feedback.sql` once): row level security ON with no policies, and `anon`/`authenticated` have no privileges. Only the server (service role key) can touch it. The browser never talks to Supabase directly.
+- `POST /api/feedback` (public) only inserts. There is no public read route. It validates length, cleans the page path, has a hidden honeypot field and is limited per IP (`FEEDBACK_LIMIT`, default 5 per hour). IP addresses are not stored.
+- `POST /api/feedback-admin/login` exchanges the key for a signed token (HMAC-SHA256, 2 hours). The key is never stored in the browser. Changing `FEEDBACK_KEY` signs everybody out. All other admin routes need `Authorization: Bearer <token>` and answer with `Cache-Control: no-store`.
+- Keys are compared in constant time. 8 wrong feedback keys (or 10 wrong upload keys) from one IP lock that IP out for 15 minutes.

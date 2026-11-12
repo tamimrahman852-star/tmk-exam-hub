@@ -7,8 +7,10 @@ import ShareButtons from '../components/ShareButtons.jsx';
 const blank = (marks, negative) => ({ text: '', a: '', b: '', c: '', d: '', correct: 'A', marks, negative, explanation: '' });
 const fresh = () => ({ title: '', description: '', duration: 30, marks: 1, negative: 0.25 });
 
-export default function AdminCreate() {
-  const [adminKey, setAdminKey] = useState(localStorage.getItem('tmk-admin-key') || '');
+export default function AdminCreate({ adminKey: lockedKey = null } = {}) {
+  // When opened from the /upload-exam gate the verified key is passed in, so there is no key box and nothing is stored.
+  const [typedKey, setTypedKey] = useState(lockedKey ? '' : localStorage.getItem('tmk-admin-key') || '');
+  const adminKey = lockedKey ?? typedKey;
   const [exam, setExam] = useState(fresh());
   const [questions, setQuestions] = useState([blank(1, 0.25)]);
   const [busy, setBusy] = useState(false);
@@ -35,7 +37,7 @@ export default function AdminCreate() {
     if (missing) return setError(`${missing} question(s) have no correct answer selected (marked red).`);
     setBusy(true);
     try {
-      localStorage.setItem('tmk-admin-key', adminKey);
+      if (!lockedKey) localStorage.setItem('tmk-admin-key', adminKey);
       const res = await api('/api/admin/exams', {
         method: 'POST',
         headers: { 'x-admin-key': adminKey },
@@ -76,7 +78,7 @@ export default function AdminCreate() {
 
       <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Step 1 · Exam details</h2>
       <div className="card space-y-3 p-4">
-        <input type="password" className="input" placeholder="Admin key (leave empty if public creation is on)" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} />
+        {!lockedKey && <input type="password" className="input" placeholder="Admin key (leave empty if public creation is on)" value={adminKey} onChange={(e) => setTypedKey(e.target.value)} />}
         <input className="input" placeholder="Exam title" value={exam.title} onChange={(e) => setExam({ ...exam, title: e.target.value })} />
         <textarea className="input" rows={2} placeholder="Description (optional)" value={exam.description} onChange={(e) => setExam({ ...exam, description: e.target.value })} />
         <div className="grid grid-cols-3 gap-2">

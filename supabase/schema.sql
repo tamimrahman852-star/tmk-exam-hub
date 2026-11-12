@@ -50,8 +50,23 @@ create table if not exists public.daily_quizzes (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.feedbacks (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null default 'other' check (kind in ('bug', 'suggestion', 'question', 'other')),
+  message text not null check (char_length(message) between 5 and 2000),
+  name text,
+  contact text,
+  page text,
+  user_agent text,
+  status text not null default 'new' check (status in ('new', 'read', 'resolved')),
+  created_at timestamptz not null default now()
+);
+create index if not exists feedbacks_created_idx on public.feedbacks (created_at desc);
+
 -- Only the backend (service role key) touches the data; block direct anon access.
 alter table public.exams enable row level security;
 alter table public.questions enable row level security;
 alter table public.attempts enable row level security;
 alter table public.daily_quizzes enable row level security;
+alter table public.feedbacks enable row level security;
+revoke all on public.feedbacks from anon, authenticated;
